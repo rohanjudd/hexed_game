@@ -7,16 +7,28 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-#include <Encoder.h>
+#include <U8g2lib.h>
+#include <Adafruit_MCP23017.h>
+//#include <Encoder.h>
 
-#define OLED_DC     21
-#define OLED_CS     A1
-#define OLED_RESET  A5
-Adafruit_SSD1306 display(OLED_DC, OLED_RESET, OLED_CS);
+void setup();
+void loop();
+void check_for_mode_change();
+void check_guess();
+void display_mode();
+void update_screen();
+void beep();
+byte get_button_byte();
+byte update_guess_hex();
+byte pot_to_hex();
+byte encoder_to_hex();
+void draw_byte(byte b);
+void debug_byte(String s, byte b);
+void update_guess_binary();
 
-Encoder myEnc(27,33);
+U8G2_SSD1306_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
+
+//Encoder myEnc(27,33);
 
 byte bit_button[8] = {4, 5, 6, 7, 8, 9, 10, 12};
 byte button_byte = 0;
@@ -52,10 +64,11 @@ void setup()
   pinMode(button_a, INPUT_PULLUP);
   pinMode(button_b, INPUT_PULLUP);
 
-  display.begin(SSD1306_SWITCHCAPVCC);
-  display.display();
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
+  u8g2.begin();
+  u8g2.clearBuffer();					// clear the internal memory
+  u8g2.setFont(u8g2_font_ncenB08_tr);	// choose a suitable font
+  u8g2.drawStr(0,10,"Hello World!");	// write something to the internal memory
+  u8g2.sendBuffer();					// transfer internal memory to the display
   delay(1500);
 
   Serial.begin(115200);
@@ -107,16 +120,19 @@ void check_guess()
 
 void display_mode()
 {
-  display.clearDisplay();
+  /*u8g2.clearBuffer();
+  draw();
+  u8g2.sendBuffer();
   display.setCursor(0, 0);
   display.println(hex_game.get_mode_string());
   display.display();
   delay(500);
+  */
 }
 
 void update_screen()
 {
-  display.clearDisplay();
+  /*display.clearDisplay();
   display.setCursor(0, 0);
   display.println(hex_game.get_target_string());
   display.setCursor(0, 16);
@@ -127,6 +143,7 @@ void update_screen()
     display.println(get_hex_string(guess));
   }
   display.display();
+  */
 }
 
 void beep()
@@ -166,18 +183,21 @@ byte pot_to_hex()
 
 byte encoder_to_hex()
 {
-  return (myEnc.read() /4) % 16;
+  //return (myEnc.read() /4) % 16;
+  return 0;
 }
 
 void draw_byte(byte b)
 {
   String s = get_binary_string(b);
+  /*
   display.setTextSize(2);
   display.setTextColor(WHITE);
   display.setCursor(0, 0);
   display.clearDisplay();
   display.println(s);
   display.display();
+  */
 }
 
 void debug_byte(String s, byte b)
