@@ -25,6 +25,7 @@ byte set_high(byte b, byte c)
 byte set_low(byte b, byte c)
 {
   b = b & 240; // erase low nibble
+  c = c & 15; // erase high nibble
   b = b | c;
   return b;
 }

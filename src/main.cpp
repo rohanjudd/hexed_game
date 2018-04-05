@@ -9,7 +9,7 @@
 #include <Wire.h>
 #include <U8g2lib.h>
 #include <Adafruit_MCP23017.h>
-//#include <Encoder.h>
+#include <Encoder.h>
 
 void setup();
 void loop();
@@ -18,19 +18,28 @@ void check_guess();
 void display_mode();
 void update_screen();
 void beep();
+void check_encoder();
 byte get_button_byte();
 byte update_guess_hex();
 byte pot_to_hex();
-byte encoder_to_hex();
-void draw_byte(byte b);
+byte encoder_a_to_hex();
+byte encoder_b_to_hex();
 void debug_byte(String s, byte b);
 void update_guess_binary();
 
 U8G2_SSD1306_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
+Adafruit_MCP23017 mcp;
 
-//Encoder myEnc(27,33);
+Encoder encoder_a(33,27);
+Encoder encoder_b(32,14);
 
-byte bit_button[8] = {4, 5, 6, 7, 8, 9, 10, 12};
+/*#define encoder0PinA  33
+#define encoder0PinB  27
+
+volatile int encoder0Pos = 0;
+volatile boolean PastB = 0;
+volatile boolean update = false;
+*/
 byte button_byte = 0;
 byte last_button_byte = 0;
 byte new_presses = 0;
@@ -45,31 +54,28 @@ byte piezo = 11;
 boolean state = false;
 int freq = 0;
 
-
 Game hex_game(0);
 
 void setup()
 {
-  /*
-  for (int i = 0; i < 9; i++) {
-    pinMode(bit_button[i], INPUT_PULLUP);
-  }
-  pinMode(pot, INPUT);
-  pinMode(led1, OUTPUT);
-  pinMode(led2, OUTPUT);
-  pinMode(piezo, OUTPUT);
-  pinMode(16, INPUT);
-  randomSeed(analogRead(16));
+  //pinMode(piezo, OUTPUT);
+
+  mcp.begin();      // use default address 0
+  mcp.pinMode(0, INPUT);
+  for(int i=0;i<=9;i++)
+      mcp.pullUp(i, HIGH);
+/*
+  pinMode(encoder0PinA, INPUT);
+  pinMode(encoder0PinB, INPUT);
+  attachInterrupt(encoder0PinA, doEncoderB, FALLING);
 */
-  pinMode(button_a, INPUT_PULLUP);
-  pinMode(button_b, INPUT_PULLUP);
 
   u8g2.begin();
   u8g2.clearBuffer();					// clear the internal memory
-  u8g2.setFont(u8g2_font_ncenB08_tr);	// choose a suitable font
-  u8g2.drawStr(0,10,"Hello World!");	// write something to the internal memory
+  u8g2.setFont(u8g2_font_inb16_mr);	// choose a suitable font
+  u8g2.drawStr(0,18,"Hexed");	// write something to the internal memory
   u8g2.sendBuffer();					// transfer internal memory to the display
-  delay(1500);
+  delay(500);
 
   Serial.begin(115200);
   Serial.println("Hexed");
@@ -79,7 +85,8 @@ void setup()
 
 void loop()
 {
-  //check_for_mode_change();
+  //check_encoder();
+  check_for_mode_change();
   if (hex_game.get_input_mode()) {
     update_guess_binary();
   }
@@ -93,9 +100,18 @@ void loop()
   delay(50);
 }
 
+void check_encoder()
+{
+  /*if (update) {
+    update = false;
+    PastB ? encoder0Pos++ : encoder0Pos--;
+  }
+  */
+}
+
 void check_for_mode_change()
 {
-  if (!digitalRead(button_a)) {
+  if (!mcp.digitalRead(8)) {
     Serial.println("button_a pressed");
     if (!button_a_last) {
       hex_game.change_mode();
@@ -120,30 +136,29 @@ void check_guess()
 
 void display_mode()
 {
-  /*u8g2.clearBuffer();
-  draw();
-  u8g2.sendBuffer();
-  display.setCursor(0, 0);
-  display.println(hex_game.get_mode_string());
-  display.display();
+  u8g2.clearBuffer();					// clear the internal memory
+  //u8g2.setFont(u8g2_font_ncenB08_tr);	// choose a suitable font
+  u8g2.setCursor(0, 18);
+  u8g2.print(hex_game.get_mode_string());
+  //u8g2.drawStr(0,10, hex_game.get_mode_string().c_str());	// write something to the internal memory
+  u8g2.sendBuffer();					// transfer internal memory to the display
   delay(500);
-  */
 }
 
 void update_screen()
 {
-  /*display.clearDisplay();
-  display.setCursor(0, 0);
-  display.println(hex_game.get_target_string());
-  display.setCursor(0, 16);
+  u8g2.clearBuffer();					// clear the internal memory
+  //u8g2.setFont(u8g2_font_ncenB08_tr);	// choose a suitable font
+  u8g2.setCursor(0, 18);
+  u8g2.print(hex_game.get_target_string());
+  u8g2.setCursor(0, 40);
   if (hex_game.get_input_mode()) {
-    display.println(get_binary_string(guess));
+    u8g2.print(get_binary_string(guess));
   }
   else {
-    display.println(get_hex_string(guess));
+    u8g2.print(get_hex_string(guess));
   }
-  display.display();
-  */
+  u8g2.sendBuffer();
 }
 
 void beep()
@@ -157,23 +172,17 @@ void beep()
 
 byte get_button_byte()
 {
+  byte port_a = mcp.readGPIO(0);
   byte output = 0;
-  for (int i = 0; i <= 8; i++) {
-    (!digitalRead(bit_button[i])) ? (bitSet(output, i)) : (0);
-  }
+  for(int i=0;i<=7;i++)
+    bitWrite(output,i,!bitRead(port_a,7-i));
   return output;
 }
 
 byte update_guess_hex()
 {
-  if (digitalRead(button_a) == 0)
-  {
-    guess = set_high(guess, encoder_to_hex());
-  }
-  if (digitalRead(button_b) == 0)
-  {
-    guess = set_low(guess, encoder_to_hex());
-  }
+    guess = set_high(guess, encoder_a_to_hex());
+    guess = set_low(guess, encoder_b_to_hex());
 }
 
 byte pot_to_hex()
@@ -181,23 +190,14 @@ byte pot_to_hex()
   return analogRead(pot) / 64;
 }
 
-byte encoder_to_hex()
+byte encoder_a_to_hex()
 {
-  //return (myEnc.read() /4) % 16;
-  return 0;
+  return (encoder_a.read() / 4) % 16;
 }
 
-void draw_byte(byte b)
+byte encoder_b_to_hex()
 {
-  String s = get_binary_string(b);
-  /*
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.clearDisplay();
-  display.println(s);
-  display.display();
-  */
+  return (encoder_b.read() / 4) % 16;
 }
 
 void debug_byte(String s, byte b)
