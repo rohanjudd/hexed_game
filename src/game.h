@@ -1,14 +1,14 @@
 /*
   game.h - Class for hex byte object
 */
-#ifndef game.h
-#define game.h
+//#ifndef game.h
+//#define game.h
 #include "Arduino.h"
 
 class Game
 {
   public:
-	  Game(byte mode);
+	  Game(byte input_mode, byte output_mode);
 	  void new_target();
     byte get_target();
     String get_target_string();
@@ -26,4 +26,4 @@ class Game
 	  int _score;
 };
 
-#endif
+//#endif

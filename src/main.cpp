@@ -1,15 +1,14 @@
 // Hexed Game
 // Rohan Judd Apr 2018
-
-#include "hex_byte.h"
-#include "game.h"
-#include "Encoder.h"
-
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
 #include <U8g2lib.h>
 #include <Adafruit_MCP23017.h>
+#include <Encoder.h>
+
+#include "hex_byte.h"
+#include "game.h"
 
 void setup();
 void loop();
@@ -17,18 +16,19 @@ void check_for_mode_change();
 void check_guess();
 void display_mode();
 void update_screen();
+void next_mode();
 void beep();
+void reset_encoders();
 byte get_button_byte();
 byte update_guess_hex();
 byte encoder_a_to_hex();
 byte encoder_b_to_hex();
-void debug_byte(String s, byte b);
 void update_guess_binary();
 
 U8G2_SSD1306_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
 Adafruit_MCP23017 mcp;
 
-Encoder encoder_a(33,27);
+Encoder encoder_a(15,33);
 Encoder encoder_b(32,14);
 
 byte button_byte = 0;
@@ -39,7 +39,8 @@ boolean button_a_last = false;
 byte piezo = 11;
 int freq = 0;
 
-Game hex_game(0);
+Game games[3] = (Game(0,1), Game(1,0), Game(2,1));
+byte mode_index = 0;
 
 void setup()
 {
@@ -50,41 +51,41 @@ void setup()
       mcp.pullUp(i, HIGH);
 
   u8g2.begin();
+  u8g2.setContrast(0);
   u8g2.clearBuffer();					// clear the internal memory
   u8g2.setFont(u8g2_font_inb16_mr);	// choose a suitable font
   u8g2.drawStr(0,18,"Hexed");	// write something to the internal memory
   u8g2.sendBuffer();					// transfer internal memory to the display
-  delay(500);
+  delay(200);
 
   Serial.begin(115200);
   Serial.println("Hexed");
-  hex_game.new_target();
+  games[mode_index].new_target();
   display_mode();
 }
 
 void loop()
 {
-  //check_encoder();
   check_for_mode_change();
-  if (hex_game.get_input_mode()) {
+  if (games[mode_index].get_input_mode()) {
     update_guess_binary();
   }
   else {
     update_guess_hex();
   }
   update_screen();
-  //if (hex_game.get_input_mode() || button_byte == 0) {
-    check_guess();
-  //}
+  check_guess();
   delay(30);
 }
 
 void check_for_mode_change()
 {
   if (!mcp.digitalRead(8)) {
-    Serial.println("button_a pressed");
     if (!button_a_last) {
-      hex_game.change_mode();
+      //games[mode_index].change_mode();
+      next_mode();
+      Serial.print("Changing Mode to: ");
+      Serial.println(mode_index);
       display_mode();
       guess = 0;
     }
@@ -97,10 +98,11 @@ void check_for_mode_change()
 
 void check_guess()
 {
-  if (hex_game.check_guess(guess)) {
+  if (games[mode_index].check_guess(guess)) {
     beep();
     delay(200);
     guess = 0;
+    reset_encoders();
   }
 }
 
@@ -108,7 +110,7 @@ void display_mode()
 {
   u8g2.clearBuffer();					// clear the internal memory
   u8g2.setCursor(0, 18);
-  u8g2.print(hex_game.get_mode_string());
+  u8g2.print(games[mode_index].get_mode_string());
   u8g2.sendBuffer();					// transfer internal memory to the display
   delay(500);
 }
@@ -117,15 +119,22 @@ void update_screen()
 {
   u8g2.clearBuffer();					// clear the internal memory
   u8g2.setCursor(0, 18);
-  u8g2.print(hex_game.get_target_string());
+  u8g2.print(games[mode_index].get_target_string());
   u8g2.setCursor(0, 40);
-  if (hex_game.get_input_mode()) {
+  if (games[mode_index].get_input_mode()) {
     u8g2.print(get_binary_string(guess));
   }
   else {
     u8g2.print(get_hex_string(guess));
   }
   u8g2.sendBuffer();
+}
+
+void next_mode()
+{
+  mode_index++;
+  if(mode_index >= sizeof(games))
+    mode_index = 0;
 }
 
 void beep()
@@ -154,31 +163,18 @@ byte update_guess_hex()
 
 byte encoder_a_to_hex()
 {
-  int val = encoder_a.read();
-  Serial.print(val);
-  Serial.print(" : ");
-  float f = float(encoder_a.read()) / 4.0;
-  Serial.print(f);
-  Serial.print(" : ");
-  int x = round(f);
-  Serial.print(x);
-  Serial.print(" : ");
-  int m = x % 16;
-  Serial.println(m);
-  return m;
+  return round(float(encoder_a.read()) / 4.0) % 16;
 }
 
 byte encoder_b_to_hex()
 {
-  int x = float(encoder_b.read()) / 4.0;
-  return x % 16;
+  return round(float(encoder_b.read()) / 4.0) % 16;
 }
 
-void debug_byte(String s, byte b)
+void reset_encoders()
 {
-  Serial.print(s);
-  Serial.print(": ");
-  Serial.println(get_binary_string(b));
+  encoder_a.write(0);
+  encoder_b.write(0);
 }
 
 void update_guess_binary()

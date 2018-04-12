@@ -10,10 +10,10 @@ static String FORMAT[3] = {"HEX", "BIN", "DEC"};
 // 1 BIN
 // 2 DEC
 
-Game::Game(byte arg)
+Game::Game(byte input_mode, byte output_mode)
 {
-  _input_mode = 1;
-  _output_mode = 0;
+  _input_mode = input_mode;
+  _output_mode = output_mode;
 }
 
 void Game::new_target()
@@ -60,7 +60,7 @@ String Game::get_mode_string()
   mode_text += FORMAT[_output_mode];
   return mode_text;
 }
-
+/*
 void Game::change_input_mode()
 {
   _input_mode = (_input_mode + 1 ) % 3;
@@ -90,7 +90,7 @@ void Game::change_mode()
   }
   new_target();
 }
-
+*/
 boolean Game::check_guess(byte b)
 {
   if (b == _target) {
