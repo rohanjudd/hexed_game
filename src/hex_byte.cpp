@@ -62,6 +62,13 @@ String get_binary_string(byte b)
   return s;
 }
 
+String get_decimal_string(byte b)
+{
+  String s = "";
+  s += b;
+  return s;
+}
+
 byte hex_ascii_to_byte(char c)
 {
   if(c >= 48 && c <= 57){

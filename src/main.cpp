@@ -14,7 +14,7 @@ void setup();
 void loop();
 void check_for_mode_change();
 void check_guess();
-void display_mode();
+void show_mode();
 void update_screen();
 void next_mode();
 void beep();
@@ -39,7 +39,8 @@ boolean button_a_last = false;
 byte piezo = 11;
 int freq = 0;
 
-Game games[3] = (Game(0,1), Game(1,0), Game(2,1));
+const byte numModes = 3;
+Game games[numModes];
 byte mode_index = 0;
 
 void setup()
@@ -60,8 +61,11 @@ void setup()
 
   Serial.begin(115200);
   Serial.println("Hexed");
+  games[0].set_modes(0,1);
+  games[1].set_modes(1,0);
+  games[2].set_modes(1,2);
   games[mode_index].new_target();
-  display_mode();
+  show_mode();
 }
 
 void loop()
@@ -86,7 +90,7 @@ void check_for_mode_change()
       next_mode();
       Serial.print("Changing Mode to: ");
       Serial.println(mode_index);
-      display_mode();
+      show_mode();
       guess = 0;
     }
     button_a_last = true;
@@ -106,7 +110,7 @@ void check_guess()
   }
 }
 
-void display_mode()
+void show_mode()
 {
   u8g2.clearBuffer();					// clear the internal memory
   u8g2.setCursor(0, 18);
@@ -121,11 +125,18 @@ void update_screen()
   u8g2.setCursor(0, 18);
   u8g2.print(games[mode_index].get_target_string());
   u8g2.setCursor(0, 40);
-  if (games[mode_index].get_input_mode()) {
-    u8g2.print(get_binary_string(guess));
-  }
-  else {
-    u8g2.print(get_hex_string(guess));
+  byte input_mode = games[mode_index].get_input_mode();
+  switch(input_mode)
+  {
+    case 0:
+      u8g2.print(get_hex_string(guess));
+      break;
+    case 1:
+      u8g2.print(get_binary_string(guess));
+      break;
+    case 2:
+      u8g2.print(get_decimal_string(guess));
+      break;
   }
   u8g2.sendBuffer();
 }
@@ -133,7 +144,7 @@ void update_screen()
 void next_mode()
 {
   mode_index++;
-  if(mode_index >= sizeof(games))
+  if(mode_index >= numModes)
     mode_index = 0;
 }
 

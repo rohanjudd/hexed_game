@@ -8,7 +8,9 @@
 class Game
 {
   public:
+    Game();
 	  Game(byte input_mode, byte output_mode);
+    void set_modes(byte input_mode, byte output_mode);
 	  void new_target();
     byte get_target();
     String get_target_string();
