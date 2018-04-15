@@ -24,6 +24,7 @@ byte update_guess_hex();
 byte encoder_a_to_hex();
 byte encoder_b_to_hex();
 void update_guess_binary();
+void hexagon(byte x, byte y, byte radius);
 
 U8G2_SSD1306_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
 Adafruit_MCP23017 mcp;
@@ -36,8 +37,6 @@ byte last_button_byte = 0;
 byte new_presses = 0;
 byte guess = 0;
 boolean button_a_last = false;
-byte piezo = 11;
-int freq = 0;
 
 const byte numModes = 3;
 Game games[numModes];
@@ -45,7 +44,9 @@ byte mode_index = 0;
 
 void setup()
 {
-  //pinMode(piezo, OUTPUT);
+  Serial.begin(115200);
+  Serial.println("Hexed");
+
   mcp.begin();      // use default address 0
   mcp.pinMode(0, INPUT);
   for(int i=0;i<=9;i++)
@@ -53,14 +54,23 @@ void setup()
 
   u8g2.begin();
   u8g2.setContrast(0);
-  u8g2.clearBuffer();					// clear the internal memory
   u8g2.setFont(u8g2_font_inb16_mr);	// choose a suitable font
+
+  u8g2.clearBuffer();					// clear the internal memory
   u8g2.drawStr(0,18,"Hexed");	// write something to the internal memory
   u8g2.sendBuffer();					// transfer internal memory to the display
-  delay(200);
+  delay(800);
 
-  Serial.begin(115200);
-  Serial.println("Hexed");
+  u8g2.clearBuffer();
+  for(int x=20; x<160; x+=20){
+    for(int y=20; y<44; y+=20){
+      hexagon(x,y,12);
+    }
+  }
+  u8g2.sendBuffer();
+  delay(2000);
+
+
   games[0].set_modes(0,1);
   games[1].set_modes(1,0);
   games[2].set_modes(1,2);
@@ -86,7 +96,6 @@ void check_for_mode_change()
 {
   if (!mcp.digitalRead(8)) {
     if (!button_a_last) {
-      //games[mode_index].change_mode();
       next_mode();
       Serial.print("Changing Mode to: ");
       Serial.println(mode_index);
@@ -95,9 +104,8 @@ void check_for_mode_change()
     }
     button_a_last = true;
   }
-  else {
+  else
     button_a_last = false;
-  }
 }
 
 void check_guess()
@@ -151,10 +159,8 @@ void next_mode()
 void beep()
 {
   for (int i = 1912; i <= 3038; i += 30) {
-  //  tone(piezo, i);
     delay(3);
   }
-//  noTone(piezo);
 }
 
 byte get_button_byte()
@@ -200,5 +206,27 @@ void update_guess_binary()
   for (int i = 0; i <= 8; i++) {
     if (bitRead(new_presses, i))
       bitWrite(guess, i, !bitRead(guess, i));
+  }
+}
+
+void hexagon(byte x, byte y, byte radius)
+{
+  boolean isFirst = true;
+  byte lastX = 0;
+  byte lastY = 0;
+  float angle = 6.28 / 6.0;
+  for (float a = 0; a < 6.28; a += angle) {
+    byte sx = byte(round(x + cos(a) * radius));
+    byte sy = byte(round(y + sin(a) * radius));
+    Serial.print("sx: ");
+    Serial.print(sx);
+    Serial.print(" sy: ");
+    Serial.println(sy);
+    if (! isFirst)
+      u8g2.drawLine(lastX, lastY, sx, sy);
+    else
+      isFirst = false;
+    lastX = sx;
+    lastY = sy;
   }
 }
