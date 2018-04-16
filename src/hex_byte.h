@@ -1,9 +1,6 @@
 /*
   hex_byte.h - Class for hex byte object
 */
-//#ifndef hex_byte.h
-//#define hex_byte.h
-
 #include "Arduino.h"
 
 byte get_high(byte b);
@@ -16,5 +13,3 @@ String get_binary_string(byte b);
 String get_decimal_string(byte b);
 char nibble_to_ascii(byte b);
 byte hex_ascii_to_byte(char c);
-
-//#endif

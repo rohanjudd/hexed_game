@@ -1,7 +1,6 @@
 /*
   game.cpp - Class for game object
 */
-#include "Arduino.h"
 #include "game.h"
 #include "hex_byte.h"
 
