@@ -1,26 +1,24 @@
 #include "display.h"
-
-Display::Display()
+namespace display
 {
-}
-
-Display::initialise()
+U8G2_SSD1306_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
+void initialise()
 {
-        u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
         u8g2.begin();
         u8g2.setContrast(0);
         u8g2.setFont(u8g2_font_inb16_mr); // choose a suitable font
 }
 
-void Display::splash_text(String s)
+void splash_text(String s)
 {
         u8g2.clearBuffer(); // clear the internal memory
-        u8g2.drawStr(0,18,"Hexed"); // write something to the internal memory
+        u8g2.setCursor(0, 18);
+        u8g2.print(s);
         u8g2.sendBuffer(); // transfer internal memory to the display
         delay(800);
 }
 
-void Display::hexagon_test()
+void hexagon_test()
 {
         u8g2.clearBuffer();
         for(int x=20; x<160; x+=20) {
@@ -32,7 +30,7 @@ void Display::hexagon_test()
         delay(2000);
 }
 
-void Display::draw_hexagon(byte x, byte y, byte radius)
+void draw_hexagon(byte x, byte y, byte radius)
 {
         boolean isFirst = true;
         byte lastX = 0;
@@ -50,7 +48,7 @@ void Display::draw_hexagon(byte x, byte y, byte radius)
         }
 }
 
-void Display::update_screen(String t, String g)
+void update_screen(String t, String g)
 {
         u8g2.clearBuffer();   // clear the internal memory
         u8g2.setCursor(0, 18);
@@ -58,4 +56,5 @@ void Display::update_screen(String t, String g)
         u8g2.setCursor(0, 40);
         u8g2.print(g);
         u8g2.sendBuffer();
+}
 }
