@@ -15,7 +15,6 @@ void splash_text(String s)
         u8g2.setCursor(0, 18);
         u8g2.print(s);
         u8g2.sendBuffer(); // transfer internal memory to the display
-        delay(800);
 }
 
 void hexagon_test()
@@ -48,13 +47,15 @@ void draw_hexagon(byte x, byte y, byte radius)
         }
 }
 
-void update_screen(String t, String g)
+void update_screen(String target, String guess, int score)
 {
         u8g2.clearBuffer();   // clear the internal memory
         u8g2.setCursor(0, 18);
-        u8g2.print(t);
+        u8g2.print(target);
         u8g2.setCursor(0, 40);
-        u8g2.print(g);
+        u8g2.print(guess);
+        u8g2.setCursor(0, 60);
+        u8g2.print(score);
         u8g2.sendBuffer();
 }
 }

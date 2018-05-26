@@ -18,14 +18,10 @@ void update_screen();
 void next_mode();
 void beep();
 void reset_encoders();
+void update_guess();
 byte get_button_byte();
-void update_guess_hex();
-byte encoder_a_to_hex();
-byte encoder_b_to_hex();
-byte encoder_a_to_decimal();
-byte encoder_b_to_decimal();
-void update_guess_decimal();
-void update_guess_binary();
+byte encoder_a_read();
+byte encoder_b_read();
 
 Adafruit_MCP23017 mcp;
 
@@ -52,32 +48,19 @@ void setup(){
 
         display::initialise();
         display::splash_text("Hexed");
-        delay(800);
+        delay(500);
 
         games[0].set_modes(0,1);
         games[1].set_modes(1,0);
         games[2].set_modes(1,2);
         games[3].set_modes(2,1);
-        games[mode_index].new_target();
         show_mode();
 }
 
 void loop(){
         check_for_mode_change();
-        byte input_mode = games[mode_index].get_input_mode();
-        switch(input_mode)
-        {
-        case 0:
-                update_guess_hex();
-                break;
-        case 1:
-                update_guess_binary();
-                break;
-        case 2:
-                update_guess_decimal();
-                break;
-        }
         update_screen();
+        update_guess();
         check_guess();
         delay(30);
 }
@@ -92,6 +75,13 @@ void check_for_mode_change(){
                 button_a_last = false;
 }
 
+void update_screen(){
+        byte input_mode = games[mode_index].get_input_mode();
+        display::update_screen(games[mode_index].get_target_string(),
+                               get_string(guess, input_mode),
+                               games[mode_index].get_score());
+}
+
 void check_guess(){
         if (games[mode_index].check_guess(guess)) {
                 beep();
@@ -103,12 +93,7 @@ void check_guess(){
 
 void show_mode(){
         display::splash_text(games[mode_index].get_mode_string());
-        delay(500);
-}
-
-void update_screen(){
-        byte input_mode = games[mode_index].get_input_mode();
-        display::update_screen(games[mode_index].get_target_string(), get_string(guess, input_mode));
+        delay(400);
 }
 
 void next_mode(){
@@ -117,6 +102,7 @@ void next_mode(){
                 mode_index = 0;
         show_mode();
         guess = 0;
+        reset_encoders();
 }
 
 void beep(){
@@ -132,29 +118,12 @@ byte get_button_byte(){
         return output;
 }
 
-void update_guess_hex(){
-        guess = set_high(guess, encoder_a_to_hex());
-        guess = set_low(guess, encoder_b_to_hex());
+byte encoder_a_read(){
+        return round(float(encoder_a.read()) / 4.0);
 }
 
-void update_guess_decimal(){
-        guess = (encoder_a_to_decimal() * 10) + encoder_b_to_decimal();
-}
-
-byte encoder_a_to_hex(){
-        return round(float(encoder_a.read()) / 4.0) % 16;
-}
-
-byte encoder_b_to_hex(){
-        return round(float(encoder_b.read()) / 4.0) % 16;
-}
-
-byte encoder_a_to_decimal(){
-        return round(float(encoder_a.read()) / 4.0) % 26;
-}
-
-byte encoder_b_to_decimal(){
-        return round(float(encoder_b.read()) / 4.0) % 10;
+byte encoder_b_read(){
+        return round(float(encoder_b.read()) / 4.0);
 }
 
 void reset_encoders(){
@@ -162,11 +131,27 @@ void reset_encoders(){
         encoder_b.write(0);
 }
 
-void update_guess_binary(){
-        byte button_byte = get_button_byte();
-        for (int i = 0; i <= 8; i++) {
-                if ((bitRead(button_byte, i)) && (!bitRead(last_button_byte, i)))
-                        bitWrite(guess, i, !bitRead(guess, i));
+void update_guess()
+{
+        switch(games[mode_index].get_input_mode())
+        {
+        case 0: {
+                guess = nibbles_to_byte(encoder_a_read() % 16, encoder_b_read() % 16);
+                break;
         }
-        last_button_byte = button_byte;
+        case 1: {
+                byte button_byte = get_button_byte();
+                for (int i = 0; i <= 8; i++) {
+                        if ((bitRead(button_byte, i)) && (!bitRead(last_button_byte, i)))
+                                bitWrite(guess, i, !bitRead(guess, i));
+                }
+                last_button_byte = button_byte;
+                break;
+        }
+        case 2: {
+                guess = (encoder_a_read() % 26) * 10;
+                (guess >= 250) ? guess += encoder_b_read() % 6 : guess += encoder_b_read() % 10;
+                break;
+        }
+        }
 }

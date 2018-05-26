@@ -29,6 +29,14 @@ byte set_low(byte b, byte c)
         return b;
 }
 
+byte nibbles_to_byte(byte h, byte l)
+{
+        l = l & 15; // erase high nibble
+        h = h << 4;
+        l = l | h;
+        return l;
+}
+
 byte generate_byte()
 {
         return byte(random(0, 255));
@@ -64,6 +72,10 @@ String get_binary_string(byte b)
 String get_decimal_string(byte b)
 {
         String s = "";
+        if (b < 100)
+                s+= "0";
+        if (b < 10)
+                s+= "0";
         s += b;
         return s;
 }

@@ -7,5 +7,5 @@ void initialise();
 void splash_text(String s);
 void hexagon_test();
 void draw_hexagon(byte x, byte y, byte radius);
-void update_screen(String t, String g);
+void update_screen(String target, String guess, int score);
 }
