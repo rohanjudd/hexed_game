@@ -15,3 +15,4 @@ String get_decimal_string(byte b);
 String get_string(byte b, byte f);
 char nibble_to_ascii(byte b);
 byte hex_ascii_to_byte(char c);
+byte encoder_adjust(byte b, byte h, byte l);

@@ -18,6 +18,7 @@ void volume_control(uint8_t line);
 void start_game(byte game_type);
 void check_guess();
 void update_screen();
+void game_screen(String target, String guess, int score);
 void reset_encoders();
 void update_guess();
 byte get_button_byte();
@@ -34,6 +35,7 @@ Encoder encoder_b(32,14);
 bool  b_button_last = true;
 
 byte last_button_byte = 0;
+byte binary_guess = 0;
 byte guess = 0;
 
 const byte numModes = 3;
@@ -50,9 +52,9 @@ LCDMenuLib2_menu LCDML_0 (255, 0, 0, NULL, NULL); // root menu element (do not c
 LCDMenuLib2 LCDML(LCDML_0, DISP_rows, DISP_cols, menu_display, menu_clear, menu_control);
 
 LCDML_addAdvanced (0  , LCDML_0         , 5  , NULL,          "Play Game"       , NULL,             0,    _LCDML_TYPE_default);
-LCDML_addAdvanced (1  , LCDML_0_5       , 1  , NULL,          "Hex to Bin"      , start_game,       1,    _LCDML_TYPE_default);
-LCDML_addAdvanced (2  , LCDML_0_5       , 2  , NULL,          "Bin to Hex"      , start_game,       2,    _LCDML_TYPE_default);
-LCDML_addAdvanced (3  , LCDML_0_5       , 3  , NULL,          "Bin to Dec"      , start_game,       3,    _LCDML_TYPE_default);
+LCDML_addAdvanced (1  , LCDML_0_5       , 1  , NULL,          "Hex to Bin"      , start_game,       0,    _LCDML_TYPE_default);
+LCDML_addAdvanced (2  , LCDML_0_5       , 2  , NULL,          "Bin to Hex"      , start_game,       1,    _LCDML_TYPE_default);
+LCDML_addAdvanced (3  , LCDML_0_5       , 3  , NULL,          "Bin to Dec"      , start_game,       2,    _LCDML_TYPE_default);
 LCDML_add         (4  , LCDML_0_5       , 4  , "Back"                           , back);
 LCDML_add         (5  , LCDML_0         , 3  , "Settings"                       , NULL);
 LCDML_addAdvanced (6  , LCDML_0_3       , 1  , NULL,          ""                , brightness_control,     0,   _LCDML_TYPE_dynParam);
@@ -94,42 +96,60 @@ void start_game(byte game_type)
 {
 	if(LCDML.FUNC_setup())
 	{
-		u8g2.setFont(DISP_font);
-		u8g2.firstPage();
-		char buf[20];
-		sprintf (buf, "mode: %d", game_type);
-		do {
-			u8g2.drawStr( 0, (DISP_font_h * 1), "Starting Game");
-			u8g2.drawStr( 0, (DISP_font_h * 2), buf);
-		} while( u8g2.nextPage() );
+		u8g2.setFont(u8g2_font_inb16_mr); // choose a suitable font
+		mode_index = game_type;
 	}
 	if(LCDML.FUNC_loop()){
-		if(LCDML.BT_checkLeft())
-			LCDML.FUNC_goBackToMenu();
+		if(LCDML.BT_checkAny()){
+			if(LCDML.BT_checkUp()){
+				guess = encoder_adjust(guess, -1, 0);
+				LCDML.BT_resetUp();
+			}
+			else if(LCDML.BT_checkDown()){
+				guess = encoder_adjust(guess, 1, 0);
+				LCDML.BT_resetDown();
+			}
+			if(LCDML.BT_checkLeft()){
+				guess = encoder_adjust(guess, 0, 1);
+				LCDML.BT_resetLeft();
+			}
+			else if(LCDML.BT_checkRight()){
+				guess = encoder_adjust(guess, 0, -1);
+				LCDML.BT_resetRight();
+			}
+		}
+		update_screen();
+		update_guess();
+		check_guess();
 	}
 	if(LCDML.FUNC_close()){}
 }
 
-void loop(){
-        check_for_mode_change();
-        update_screen();
-        update_guess();
-        check_guess();
-        delay(30);
-}
-
 void update_screen(){
         byte input_mode = games[mode_index].get_input_mode();
-        display::update_screen(games[mode_index].get_target_string(),
+        game_screen(games[mode_index].get_target_string(),
                                get_string(guess, input_mode),
                                games[mode_index].get_score());
 }
 
+void game_screen(String target, String guess, int score)
+{
+	u8g2.firstPage();
+	do {
+		u8g2.setCursor(0, 18);
+		u8g2.print(target);
+		u8g2.setCursor(0, 40);
+		u8g2.print(guess);
+		u8g2.setCursor(0, 60);
+		u8g2.print(score);
+	} while( u8g2.nextPage() );
+}
+
 void check_guess(){
         if (games[mode_index].check_guess(guess)) {
-                beep();
-                delay(200);
+                delay(500);
                 guess = 0;
+								binary_guess = 0;
                 reset_encoders();
         }
 }
@@ -160,21 +180,16 @@ void update_guess()
         switch(games[mode_index].get_input_mode())
         {
         case 0: {
-                guess = nibbles_to_byte(encoder_a_read() % 16, encoder_b_read() % 16);
+                //guess = nibbles_to_byte(encoder_a_read() % 16, encoder_b_read() % 16);
                 break;
         }
         case 1: {
-                byte button_byte = get_button_byte();
-                for (int i = 0; i <= 8; i++) {
-                        if ((bitRead(button_byte, i)) && (!bitRead(last_button_byte, i)))
-                                bitWrite(guess, i, !bitRead(guess, i));
-                }
-                last_button_byte = button_byte;
+                guess = binary_guess;
                 break;
         }
         case 2: {
-                guess = (encoder_a_read() % 26) * 10;
-                (guess >= 250) ? guess += encoder_b_read() % 6 : guess += encoder_b_read() % 10;
+                //guess = (encoder_a_read() % 26) * 10;
+                //(guess >= 250) ? guess += encoder_b_read() % 6 : guess += encoder_b_read() % 10;
                 break;
         }
         }
@@ -388,4 +403,14 @@ void menu_control(void)
       LCDML.BT_enter();
     }
 	}
+	byte button_byte = get_button_byte();
+	if(button_byte != last_button_byte){
+		for (int i = 0; i <= 8; i++) {
+						if ((bitRead(button_byte, i)) && (!bitRead(last_button_byte, i)))
+										bitWrite(binary_guess, i, !bitRead(binary_guess, i));
+		}
+		LCDML.BT_enter();
+		last_button_byte = button_byte;
+	}
+
 }
