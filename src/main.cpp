@@ -3,6 +3,7 @@
 #include <U8g2lib.h>
 #include <Adafruit_MCP23017.h>
 #include <Encoder.h>
+#include <Preferences.h>
 #include "config.h"
 #include "hex_byte.h"
 #include "game.h"
@@ -15,6 +16,8 @@ void back(uint8_t param);
 void go_to_root(uint8_t param);
 void brightness_control(uint8_t line);
 void volume_control(uint8_t line);
+void load_settings();
+void save_settings(byte b);
 void start_game(byte game_type);
 void encoder_hex_control();
 void encoder_dec_control();
@@ -29,6 +32,7 @@ boolean COND_hide();
 
 U8G2_SSD1306_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
 Adafruit_MCP23017 mcp;
+Preferences preferences;
 
 Encoder encoder_a(15,33);
 bool  a_button_last = true;
@@ -60,16 +64,20 @@ LCDML_addAdvanced (4  , LCDML_0_5       , 4  , NULL,          "Hex to Dec"      
 LCDML_addAdvanced (5  , LCDML_0_5       , 5  , NULL,          "Dec to Hex"      , start_game,          4,    _LCDML_TYPE_default);
 LCDML_addAdvanced (6  , LCDML_0_5       , 6  , NULL,          "Dec to Bin"      , start_game,          5,    _LCDML_TYPE_default);
 LCDML_add         (7  , LCDML_0_5       , 7  , "Back"                           , back);
-LCDML_add         (8  , LCDML_0         , 3  , "Settings"                       , NULL);
-LCDML_addAdvanced (9  , LCDML_0_3       , 1  , NULL,          ""                , brightness_control,  0,    _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (10 , LCDML_0_3       , 2  , NULL,          ""                , volume_control,      0,    _LCDML_TYPE_dynParam);
-LCDML_add         (11 , LCDML_0_3       , 3  , "Back"                           , back);
-LCDML_addAdvanced (12 , LCDML_0         , 7  , COND_hide,  "screensaver"        , screensaver,         0,    _LCDML_TYPE_default);       // this menu function can be found on "LCDML_display_menuFunction" tab
-#define DISP_cnt    12 // this value must be the same as the last menu element
+LCDML_add         (8  , LCDML_0         , 4  , "Settings"                       , NULL);
+LCDML_addAdvanced (9  , LCDML_0_4       , 1  , NULL,          ""                , brightness_control,  0,    _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (10 , LCDML_0_4       , 2  , NULL,          ""                , volume_control,      0,    _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (11 , LCDML_0_4       , 3  , NULL,          "Save Changes"   , save_settings,        0,    _LCDML_TYPE_default);
+//LCDML_add         (11 , LCDML_0_4       , 3  , "Save Changes"                   , save_settings);
+LCDML_add         (12 , LCDML_0_4       , 4  , "Back"                           , back);
+LCDML_addAdvanced (13 , LCDML_0         , 7  , COND_hide,  "screensaver"        , screensaver,         0,    _LCDML_TYPE_default);       // this menu function can be found on "LCDML_display_menuFunction" tab
+#define DISP_cnt    13 // this value must be the same as the last menu element
 LCDML_createMenu(DISP_cnt);
 
 void setup()
 {
+	load_settings();
+
 	u8g2.begin();
   u8g2.setContrast(brightness);
 
@@ -300,6 +308,22 @@ void volume_control(uint8_t line)
 	char buf[20];
 	sprintf (buf, "Volume: %d", volume);
 	u8g2.drawStr( DISP_box_x0+DISP_font_w + DISP_cur_space_behind,  (DISP_font_h * (1+line)), buf);     // the value can be changed with left or right
+}
+
+void load_settings()
+{
+	preferences.begin("hex_game", false);
+	brightness = preferences.getUChar("brightness", 0);
+	volume = preferences.getUChar("volume", 0);
+	preferences.end();
+}
+
+void save_settings(byte b)
+{
+	preferences.begin("hex_game", false);
+	preferences.putUChar("brightness", brightness);
+	preferences.putUChar("volume", volume);
+	preferences.end();
 }
 
 boolean COND_hide()  // hide a menu element
