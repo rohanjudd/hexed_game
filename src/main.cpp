@@ -16,11 +16,12 @@ void go_to_root(uint8_t param);
 void brightness_control(uint8_t line);
 void volume_control(uint8_t line);
 void start_game(byte game_type);
+void encoder_hex_control();
+void encoder_dec_control();
 void check_guess();
 void update_screen();
 void game_screen(String target, String guess, int score);
 void reset_encoders();
-void update_guess();
 byte get_button_byte();
 byte encoder_a_read();
 byte encoder_b_read();
@@ -38,7 +39,7 @@ byte last_button_byte = 0;
 byte binary_guess = 0;
 byte guess = 0;
 
-const byte numModes = 3;
+const byte numModes = 6;
 Game games[numModes];
 byte mode_index = 0;
 
@@ -51,17 +52,20 @@ byte volume = 10;
 LCDMenuLib2_menu LCDML_0 (255, 0, 0, NULL, NULL); // root menu element (do not change)
 LCDMenuLib2 LCDML(LCDML_0, DISP_rows, DISP_cols, menu_display, menu_clear, menu_control);
 
-LCDML_addAdvanced (0  , LCDML_0         , 5  , NULL,          "Play Game"       , NULL,             0,    _LCDML_TYPE_default);
-LCDML_addAdvanced (1  , LCDML_0_5       , 1  , NULL,          "Hex to Bin"      , start_game,       0,    _LCDML_TYPE_default);
-LCDML_addAdvanced (2  , LCDML_0_5       , 2  , NULL,          "Bin to Hex"      , start_game,       1,    _LCDML_TYPE_default);
-LCDML_addAdvanced (3  , LCDML_0_5       , 3  , NULL,          "Bin to Dec"      , start_game,       2,    _LCDML_TYPE_default);
-LCDML_add         (4  , LCDML_0_5       , 4  , "Back"                           , back);
-LCDML_add         (5  , LCDML_0         , 3  , "Settings"                       , NULL);
-LCDML_addAdvanced (6  , LCDML_0_3       , 1  , NULL,          ""                , brightness_control,     0,   _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (7  , LCDML_0_3       , 2  , NULL,          ""                , volume_control,       0,   _LCDML_TYPE_dynParam);
-LCDML_add         (8  , LCDML_0_3       , 3  , "Back"                           , back);
-LCDML_addAdvanced (9  , LCDML_0         , 7  , COND_hide,  "screensaver"        , screensaver, 0,   _LCDML_TYPE_default);       // this menu function can be found on "LCDML_display_menuFunction" tab
-#define DISP_cnt    9 // this value must be the same as the last menu element
+LCDML_addAdvanced (0  , LCDML_0         , 5  , NULL,          "Play Game"       , NULL,                0,    _LCDML_TYPE_default);
+LCDML_addAdvanced (1  , LCDML_0_5       , 1  , NULL,          "Hex to Bin"      , start_game,          0,    _LCDML_TYPE_default);
+LCDML_addAdvanced (2  , LCDML_0_5       , 2  , NULL,          "Bin to Hex"      , start_game,          1,    _LCDML_TYPE_default);
+LCDML_addAdvanced (3  , LCDML_0_5       , 3  , NULL,          "Bin to Dec"      , start_game,          2,    _LCDML_TYPE_default);
+LCDML_addAdvanced (4  , LCDML_0_5       , 4  , NULL,          "Hex to Dec"      , start_game,          3,    _LCDML_TYPE_default);
+LCDML_addAdvanced (5  , LCDML_0_5       , 5  , NULL,          "Dec to Hex"      , start_game,          4,    _LCDML_TYPE_default);
+LCDML_addAdvanced (6  , LCDML_0_5       , 6  , NULL,          "Dec to Bin"      , start_game,          5,    _LCDML_TYPE_default);
+LCDML_add         (7  , LCDML_0_5       , 7  , "Back"                           , back);
+LCDML_add         (8  , LCDML_0         , 3  , "Settings"                       , NULL);
+LCDML_addAdvanced (9  , LCDML_0_3       , 1  , NULL,          ""                , brightness_control,  0,    _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (10 , LCDML_0_3       , 2  , NULL,          ""                , volume_control,      0,    _LCDML_TYPE_dynParam);
+LCDML_add         (11 , LCDML_0_3       , 3  , "Back"                           , back);
+LCDML_addAdvanced (12 , LCDML_0         , 7  , COND_hide,  "screensaver"        , screensaver,         0,    _LCDML_TYPE_default);       // this menu function can be found on "LCDML_display_menuFunction" tab
+#define DISP_cnt    12 // this value must be the same as the last menu element
 LCDML_createMenu(DISP_cnt);
 
 void setup()
@@ -84,6 +88,9 @@ void setup()
 	games[0].set_modes(0,1);
 	games[1].set_modes(1,0);
 	games[2].set_modes(1,2);
+	games[3].set_modes(0,2);
+	games[4].set_modes(2,0);
+	games[5].set_modes(2,1);
 }
 
 void loop()
@@ -100,32 +107,72 @@ void start_game(byte game_type)
 		mode_index = game_type;
 	}
 	if(LCDML.FUNC_loop()){
-		if(LCDML.BT_checkAny()){
-			if(LCDML.BT_checkUp()){
-				guess = encoder_adjust(guess, -1, 0);
-				LCDML.BT_resetUp();
-			}
-			else if(LCDML.BT_checkDown()){
-				guess = encoder_adjust(guess, 1, 0);
-				LCDML.BT_resetDown();
-			}
-			if(LCDML.BT_checkLeft()){
-				guess = encoder_adjust(guess, 0, 1);
-				LCDML.BT_resetLeft();
-			}
-			else if(LCDML.BT_checkRight()){
-				guess = encoder_adjust(guess, 0, -1);
-				LCDML.BT_resetRight();
+		if(LCDML.BT_checkAny())
+		{
+			switch(games[mode_index].get_input_mode())
+			{
+				case 0: {
+                encoder_hex_control();
+                break;
+        }
+        case 1: {
+                guess = binary_guess;
+                break;
+        }
+        case 2: {
+								encoder_dec_control();
+                break;
+        }
 			}
 		}
 		update_screen();
-		update_guess();
 		check_guess();
 	}
 	if(LCDML.FUNC_close()){}
 }
 
-void update_screen(){
+void encoder_hex_control()
+{
+	if(LCDML.BT_checkUp()){
+		guess = encoder_adjust(guess, -1, 0);
+		LCDML.BT_resetUp();
+	}
+	else if(LCDML.BT_checkDown()){
+		guess = encoder_adjust(guess, 1, 0);
+		LCDML.BT_resetDown();
+	}
+	if(LCDML.BT_checkLeft()){
+		guess = encoder_adjust(guess, 0, 1);
+		LCDML.BT_resetLeft();
+	}
+	else if(LCDML.BT_checkRight()){
+		guess = encoder_adjust(guess, 0, -1);
+		LCDML.BT_resetRight();
+	}
+}
+
+void encoder_dec_control()
+{
+	if(LCDML.BT_checkUp()){
+		guess -= 10;
+		LCDML.BT_resetUp();
+	}
+	else if(LCDML.BT_checkDown()){
+		guess += 10;
+		LCDML.BT_resetDown();
+	}
+	if(LCDML.BT_checkLeft()){
+		guess += 1;
+		LCDML.BT_resetLeft();
+	}
+	else if(LCDML.BT_checkRight()){
+		guess -= 1;
+		LCDML.BT_resetRight();
+	}
+}
+
+void update_screen()
+{
         byte input_mode = games[mode_index].get_input_mode();
         game_screen(games[mode_index].get_target_string(),
                                get_string(guess, input_mode),
@@ -175,63 +222,33 @@ void reset_encoders(){
         encoder_b.write(0);
 }
 
-void update_guess()
-{
-        switch(games[mode_index].get_input_mode())
-        {
-        case 0: {
-                //guess = nibbles_to_byte(encoder_a_read() % 16, encoder_b_read() % 16);
-                break;
-        }
-        case 1: {
-                guess = binary_guess;
-                break;
-        }
-        case 2: {
-                //guess = (encoder_a_read() % 26) * 10;
-                //(guess >= 250) ? guess += encoder_b_read() % 6 : guess += encoder_b_read() % 10;
-                break;
-        }
-        }
-}
-
 void screensaver(uint8_t param)
 {
-	if(LCDML.FUNC_setup())          // ****** SETUP *********
+	if(LCDML.FUNC_setup())
 	{
-		// setup function
 		u8g2.setFont(DISP_font);
 		u8g2.firstPage();
 		do {
-			//u8g2.drawStr( 0, (DISP_font_h * 1), "screensaver");
-			//u8g2.drawStr( 0, (DISP_font_h * 2), "press any key");
-			//u8g2.drawStr( 0, (DISP_font_h * 3), "to leave it");
 		} while( u8g2.nextPage() );
-
 		LCDML.FUNC_setLoopInterval(100);  // starts a trigger event for the loop function every 100 milliseconds
 	}
 
-	if(LCDML.FUNC_loop())           // ****** LOOP *********
+	if(LCDML.FUNC_loop())
 	{
-		if (LCDML.BT_checkAny()) // check if any button_a is pressed (enter, up, down, left, right)
-		{
-			LCDML.FUNC_goBackToMenu();  // leave this function
+		if (LCDML.BT_checkAny()){
+			LCDML.FUNC_goBackToMenu();
 		}
 	}
 
-	if(LCDML.FUNC_close())          // ****** STABLE END *********
-	{
-		// The screensaver go to the root menu
+	if(LCDML.FUNC_close()){
 		LCDML.MENU_goRoot();
 	}
 }
 
 void back(uint8_t param)
 {
-	if(LCDML.FUNC_setup())          // ****** SETUP *********
-	{
-		// end function and go an layer back
-		LCDML.FUNC_goBackToMenu(1);      // leave this function and go a layer back
+	if(LCDML.FUNC_setup()){
+		LCDML.FUNC_goBackToMenu(1);
 	}
 }
 
