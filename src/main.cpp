@@ -25,6 +25,8 @@ void check_guess();
 void update_screen();
 void game_screen(String target, String guess, int score);
 void reset_encoders();
+void monitor_battery(byte b);
+float get_battery_voltage();
 byte get_button_byte();
 byte encoder_a_read();
 byte encoder_b_read();
@@ -38,6 +40,7 @@ Encoder encoder_a(15,33);
 bool  a_button_last = true;
 Encoder encoder_b(32,14);
 bool  b_button_last = true;
+byte battery_mon = A13;
 
 byte last_button_byte = 0;
 byte binary_guess = 0;
@@ -67,15 +70,16 @@ LCDML_add         (7  , LCDML_0_5       , 7  , "Back"                           
 LCDML_add         (8  , LCDML_0         , 4  , "Settings"                       , NULL);
 LCDML_addAdvanced (9  , LCDML_0_4       , 1  , NULL,          ""                , brightness_control,  0,    _LCDML_TYPE_dynParam);
 LCDML_addAdvanced (10 , LCDML_0_4       , 2  , NULL,          ""                , volume_control,      0,    _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (11 , LCDML_0_4       , 3  , NULL,          "Save Changes"   , save_settings,        0,    _LCDML_TYPE_default);
-//LCDML_add         (11 , LCDML_0_4       , 3  , "Save Changes"                   , save_settings);
-LCDML_add         (12 , LCDML_0_4       , 4  , "Back"                           , back);
-LCDML_addAdvanced (13 , LCDML_0         , 7  , COND_hide,  "screensaver"        , screensaver,         0,    _LCDML_TYPE_default);       // this menu function can be found on "LCDML_display_menuFunction" tab
-#define DISP_cnt    13 // this value must be the same as the last menu element
+LCDML_addAdvanced (11 , LCDML_0_4       , 3  , NULL,          "Monitor Battery" , monitor_battery,     0,    _LCDML_TYPE_default);
+LCDML_addAdvanced (12 , LCDML_0_4       , 4  , NULL,          "Save Changes"    , save_settings,       0,    _LCDML_TYPE_default);
+LCDML_add         (13 , LCDML_0_4       , 5  , "Back"                           , back);
+LCDML_addAdvanced (14 , LCDML_0         , 7  , COND_hide,  "screensaver"        , screensaver,         0,    _LCDML_TYPE_default);       // this menu function can be found on "LCDML_display_menuFunction" tab
+#define DISP_cnt   14 // this value must be the same as the last menu element
 LCDML_createMenu(DISP_cnt);
 
 void setup()
 {
+	pinMode(battery_mon, INPUT);
 	load_settings();
 
 	u8g2.begin();
@@ -83,6 +87,7 @@ void setup()
 
 	Serial.begin(115200);                // start serial
 	Serial.println("Hexed");
+	Serial.println(analogRead(battery_mon) * 2);
 
 	mcp.begin(); // use default address 0
 	mcp.pinMode(0, INPUT);
@@ -251,6 +256,56 @@ void screensaver(uint8_t param)
 	if(LCDML.FUNC_close()){
 		LCDML.MENU_goRoot();
 	}
+}
+
+void monitor_battery(byte b)
+{
+	if(LCDML.FUNC_setup())          // ****** SETUP *********
+	{
+		char buf[20];
+		sprintf (buf, "%.2fV", get_battery_voltage());
+		u8g2.setFont(DISP_font);
+		u8g2.firstPage();
+		do {
+			u8g2.drawStr( 0, (DISP_font_h * 1), buf);
+			u8g2.drawStr( 0, (DISP_font_h * 2), "Press Back");
+		} while( u8g2.nextPage() );
+
+		LCDML.FUNC_setLoopInterval(500);  // starts a trigger event for the loop function every 100 milliseconds
+	}
+
+	if(LCDML.FUNC_loop())           // ****** LOOP *********
+	{
+		// loop function, can be run in a loop when LCDML_DISP_triggerMenu(xx) is set
+		// the quit button works in every DISP function without any checks; it starts the loop_end function
+
+		// reset screensaver timer
+		LCDML.SCREEN_resetTimer();
+
+		 // this function is called every 100 milliseconds
+
+		// this method checks every 1000 milliseconds if it is called
+
+		char buf[20];
+		sprintf (buf, "%.2fV", get_battery_voltage());
+
+		u8g2.setFont(DISP_font);
+		u8g2.firstPage();
+		do {
+			u8g2.drawStr( 0, (DISP_font_h * 1), buf);
+			u8g2.drawStr( 0, (DISP_font_h * 2), "Press Back");
+		} while( u8g2.nextPage() );
+	}
+
+	if(LCDML.FUNC_close())      // ****** STABLE END *********
+	{
+		// you can here reset some global vars or do nothing
+	}
+}
+
+float get_battery_voltage()
+{
+	return analogRead(battery_mon) * 0.001772;
 }
 
 void back(uint8_t param)
