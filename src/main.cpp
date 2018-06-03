@@ -7,6 +7,8 @@
 #include "config.h"
 #include "hex_byte.h"
 #include "game.h"
+#include "SoundData.h"
+#include "XT_DAC_Audio.h"
 
 void menu_display();
 void menu_clear();
@@ -26,6 +28,7 @@ void update_screen();
 void game_screen(String target, String guess, int score);
 void reset_encoders();
 void monitor_battery(byte b);
+void play_sound(byte b);
 float get_battery_voltage();
 byte get_button_byte();
 byte encoder_a_read();
@@ -56,25 +59,32 @@ unsigned long timer_1 = 0;    // timer variable (global variable)
 byte brightness = 0;
 byte volume = 10;
 
+XT_Wav_Class ForceWithYou(Force);     // create an object of type XT_Wav_Class that is used by the dac audio class (below), passing wav data as parameter.
+XT_DAC_Audio_Class DacAudio(A0,0);    // Create the main player class object. Use A0, one of the 2 DAC pins and timer 0
+
 LCDMenuLib2_menu LCDML_0 (255, 0, 0, NULL, NULL); // root menu element (do not change)
 LCDMenuLib2 LCDML(LCDML_0, DISP_rows, DISP_cols, menu_display, menu_clear, menu_control);
 
-LCDML_addAdvanced (0  , LCDML_0         , 5  , NULL,          "Play Game"       , NULL,                0,    _LCDML_TYPE_default);
-LCDML_addAdvanced (1  , LCDML_0_5       , 1  , NULL,          "Hex to Bin"      , start_game,          0,    _LCDML_TYPE_default);
-LCDML_addAdvanced (2  , LCDML_0_5       , 2  , NULL,          "Bin to Hex"      , start_game,          1,    _LCDML_TYPE_default);
-LCDML_addAdvanced (3  , LCDML_0_5       , 3  , NULL,          "Bin to Dec"      , start_game,          2,    _LCDML_TYPE_default);
-LCDML_addAdvanced (4  , LCDML_0_5       , 4  , NULL,          "Hex to Dec"      , start_game,          3,    _LCDML_TYPE_default);
-LCDML_addAdvanced (5  , LCDML_0_5       , 5  , NULL,          "Dec to Hex"      , start_game,          4,    _LCDML_TYPE_default);
-LCDML_addAdvanced (6  , LCDML_0_5       , 6  , NULL,          "Dec to Bin"      , start_game,          5,    _LCDML_TYPE_default);
-LCDML_add         (7  , LCDML_0_5       , 7  , "Back"                           , back);
-LCDML_add         (8  , LCDML_0         , 4  , "Settings"                       , NULL);
-LCDML_addAdvanced (9  , LCDML_0_4       , 1  , NULL,          ""                , brightness_control,  0,    _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (10 , LCDML_0_4       , 2  , NULL,          ""                , volume_control,      0,    _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (11 , LCDML_0_4       , 3  , NULL,          "Monitor Battery" , monitor_battery,     0,    _LCDML_TYPE_default);
-LCDML_addAdvanced (12 , LCDML_0_4       , 4  , NULL,          "Save Changes"    , save_settings,       0,    _LCDML_TYPE_default);
-LCDML_add         (13 , LCDML_0_4       , 5  , "Back"                           , back);
-LCDML_addAdvanced (14 , LCDML_0         , 7  , COND_hide,  "screensaver"        , screensaver,         0,    _LCDML_TYPE_default);       // this menu function can be found on "LCDML_display_menuFunction" tab
-#define DISP_cnt   14 // this value must be the same as the last menu element
+LCDML_addAdvanced (0 , LCDML_0    , 1 , NULL,          "Play Game"       , NULL,                0,    _LCDML_TYPE_default);
+LCDML_addAdvanced (1 , LCDML_0_1  , 1 , NULL,          "Hex to Bin"      , start_game,          0,    _LCDML_TYPE_default);
+LCDML_addAdvanced (2 , LCDML_0_1  , 2 , NULL,          "Bin to Hex"      , start_game,          1,    _LCDML_TYPE_default);
+LCDML_addAdvanced (3 , LCDML_0_1  , 3 , NULL,          "Bin to Dec"      , start_game,          2,    _LCDML_TYPE_default);
+LCDML_addAdvanced (4 , LCDML_0_1  , 4 , NULL,          "Hex to Dec"      , start_game,          3,    _LCDML_TYPE_default);
+LCDML_addAdvanced (5 , LCDML_0_1  , 5 , NULL,          "Dec to Hex"      , start_game,          4,    _LCDML_TYPE_default);
+LCDML_addAdvanced (6 , LCDML_0_1  , 6 , NULL,          "Dec to Bin"      , start_game,          5,    _LCDML_TYPE_default);
+LCDML_add         (7 , LCDML_0_1  , 7 , "Back"                           , back);
+LCDML_add         (8 , LCDML_0    , 2 , "Settings"                       , NULL);
+LCDML_addAdvanced (9 , LCDML_0_2  , 1 , NULL,          ""                , brightness_control,  0,    _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (10, LCDML_0_2  , 2 , NULL,          ""                , volume_control,      0,    _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (11, LCDML_0_2  , 3 , NULL,          "Monitor Battery" , monitor_battery,     0,    _LCDML_TYPE_default);
+LCDML_addAdvanced (12, LCDML_0_2  , 4 , NULL,          "Save Changes"    , save_settings,       0,    _LCDML_TYPE_default);
+LCDML_add         (13, LCDML_0_2  , 5 , "Back"                           , back);
+LCDML_add         (14 , LCDML_0    , 3 , "Testing"                        , NULL);
+LCDML_addAdvanced (15, LCDML_0_3  , 1 , NULL,          "Play Sound"      , play_sound,          0,    _LCDML_TYPE_default);
+LCDML_addAdvanced (16, LCDML_0_3  , 2 , NULL,          ""                , volume_control,      0,    _LCDML_TYPE_dynParam);
+LCDML_add         (17, LCDML_0_3  , 3 , "Back"                           , back);
+LCDML_addAdvanced (18 , LCDML_0   , 7 , COND_hide,     "screensaver"     , screensaver,         0,    _LCDML_TYPE_default);       // this menu function can be found on "LCDML_display_menuFunction" tab
+#define DISP_cnt   18 // this value must be the same as the last menu element
 LCDML_createMenu(DISP_cnt);
 
 void setup()
@@ -301,6 +311,11 @@ void monitor_battery(byte b)
 	{
 		// you can here reset some global vars or do nothing
 	}
+}
+
+void play_sound(byte b)
+{
+
 }
 
 float get_battery_voltage()
