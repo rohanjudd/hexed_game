@@ -9,6 +9,7 @@
 #include "game.h"
 #include "SoundData.h"
 #include "XT_DAC_Audio.h"
+#include "MAX5407.h"
 
 void menu_display();
 void menu_clear();
@@ -19,7 +20,7 @@ void go_to_root(uint8_t param);
 void brightness_control(uint8_t line);
 void volume_control(uint8_t line);
 void load_settings();
-void save_settings(byte b);
+void save_settings(uint8_t param);
 void start_game(byte game_type);
 void encoder_hex_control();
 void encoder_dec_control();
@@ -27,8 +28,9 @@ void check_guess();
 void update_screen();
 void game_screen(String target, String guess, int score);
 void reset_encoders();
-void monitor_battery(byte b);
-void play_sound(byte b);
+void monitor_battery(uint8_t param);
+void play_sound(uint8_t param);
+void sound_demo(uint8_t param);
 float get_battery_voltage();
 byte get_button_byte();
 byte encoder_a_read();
@@ -56,6 +58,11 @@ byte mode_index = 0;
 uint8_t timer_counter = 0;  // time counter (global variable)
 unsigned long timer_1 = 0;    // timer variable (global variable)
 
+static byte cs_pin = 12;
+static byte ud_pin = 27;
+static byte initial = 0;
+Digipot digipot(cs_pin, ud_pin, initial);
+
 byte brightness = 0;
 byte volume = 10;
 
@@ -79,12 +86,12 @@ LCDML_addAdvanced (10, LCDML_0_2  , 2 , NULL,          ""                , volum
 LCDML_addAdvanced (11, LCDML_0_2  , 3 , NULL,          "Monitor Battery" , monitor_battery,     0,    _LCDML_TYPE_default);
 LCDML_addAdvanced (12, LCDML_0_2  , 4 , NULL,          "Save Changes"    , save_settings,       0,    _LCDML_TYPE_default);
 LCDML_add         (13, LCDML_0_2  , 5 , "Back"                           , back);
-LCDML_add         (14 , LCDML_0    , 3 , "Testing"                        , NULL);
-LCDML_addAdvanced (15, LCDML_0_3  , 1 , NULL,          "Play Sound"      , play_sound,          0,    _LCDML_TYPE_default);
-LCDML_addAdvanced (16, LCDML_0_3  , 2 , NULL,          ""                , volume_control,      0,    _LCDML_TYPE_dynParam);
-LCDML_add         (17, LCDML_0_3  , 3 , "Back"                           , back);
-LCDML_addAdvanced (18 , LCDML_0   , 7 , COND_hide,     "screensaver"     , screensaver,         0,    _LCDML_TYPE_default);       // this menu function can be found on "LCDML_display_menuFunction" tab
-#define DISP_cnt   18 // this value must be the same as the last menu element
+LCDML_add         (14, LCDML_0    , 3 , "Testing"                        , NULL);
+LCDML_addAdvanced (15, LCDML_0_3  , 1 , NULL,          "Sound Demo"      , sound_demo,          0,    _LCDML_TYPE_default);
+//LCDML_addAdvanced (16, LCDML_0_3  , 2 , NULL,          ""                , volume_control,      0,    _LCDML_TYPE_dynParam);
+LCDML_add         (16, LCDML_0_3  , 3 , "Back"                           , back);
+LCDML_addAdvanced (17 , LCDML_0   , 4 , COND_hide,     "screensaver"     , screensaver,         0,    _LCDML_TYPE_default);       // this menu function can be found on "LCDML_display_menuFunction" tab
+#define DISP_cnt   17 // this value must be the same as the last menu element
 LCDML_createMenu(DISP_cnt);
 
 void setup()
@@ -95,9 +102,10 @@ void setup()
 	u8g2.begin();
   u8g2.setContrast(brightness);
 
+	digipot.set_tap(volume);
+
 	Serial.begin(115200);                // start serial
 	Serial.println("Hexed");
-	Serial.println(analogRead(battery_mon) * 2);
 
 	mcp.begin(); // use default address 0
 	mcp.pinMode(0, INPUT);
@@ -106,7 +114,7 @@ void setup()
 
 	LCDML_setup(DISP_cnt);
 	LCDML.MENU_enRollover();
-	LCDML.SCREEN_enable(screensaver, 10000); // set to 10 seconds
+	LCDML.SCREEN_enable(screensaver, 20000); // set to 10 seconds
 
 	games[0].set_modes(0,1);
 	games[1].set_modes(1,0);
@@ -268,7 +276,7 @@ void screensaver(uint8_t param)
 	}
 }
 
-void monitor_battery(byte b)
+void monitor_battery(uint8_t param)
 {
 	if(LCDML.FUNC_setup())          // ****** SETUP *********
 	{
@@ -286,16 +294,7 @@ void monitor_battery(byte b)
 
 	if(LCDML.FUNC_loop())           // ****** LOOP *********
 	{
-		// loop function, can be run in a loop when LCDML_DISP_triggerMenu(xx) is set
-		// the quit button works in every DISP function without any checks; it starts the loop_end function
-
-		// reset screensaver timer
 		LCDML.SCREEN_resetTimer();
-
-		 // this function is called every 100 milliseconds
-
-		// this method checks every 1000 milliseconds if it is called
-
 		char buf[20];
 		sprintf (buf, "%.2fV", get_battery_voltage());
 
@@ -313,9 +312,36 @@ void monitor_battery(byte b)
 	}
 }
 
-void play_sound(byte b)
+void sound_demo(uint8_t param)
 {
+	if(LCDML.FUNC_setup())          // ****** SETUP *********
+	{
+		u8g2.setFont(DISP_font);
+		u8g2.firstPage();
+		do {
+			u8g2.drawStr( 0, (DISP_font_h * 1), "Playing Sound");
+			u8g2.drawStr( 0, (DISP_font_h * 2), "Press Back");
+		} while( u8g2.nextPage() );
+	}
 
+	if(LCDML.FUNC_loop())           // ****** LOOP *********
+	{
+		//play_sound(0);
+	}
+
+	if(LCDML.FUNC_close())      // ****** STABLE END *********
+	{
+		// you can here reset some global vars or do nothing
+	}
+}
+
+void play_sound(uint8_t param)
+{
+	Serial.println(ForceWithYou.Completed);
+	if(ForceWithYou.Completed)
+	{
+		DacAudio.PlayWav(&ForceWithYou);
+	}
 }
 
 float get_battery_voltage()
@@ -365,12 +391,16 @@ void volume_control(uint8_t line)
 			if(LCDML.BT_checkLeft()){
 				volume++;
 				LCDML.BT_resetLeft();
-				//setVolume(volume);
+				digipot.set_tap(volume);
+				volume = digipot.get_tap();
+				Serial.println(digipot.get_tap());
 			}
 			if(LCDML.BT_checkRight()){
 				volume--;
 				LCDML.BT_resetRight();
-				//setVolume(volume);
+				digipot.set_tap(volume);
+				volume = digipot.get_tap();
+				Serial.println(digipot.get_tap());
 			}
 		}
 	}
@@ -388,7 +418,7 @@ void load_settings()
 	preferences.end();
 }
 
-void save_settings(byte b)
+void save_settings(uint8_t param)
 {
 	preferences.begin("hex_game", false);
 	preferences.putUChar("brightness", brightness);
