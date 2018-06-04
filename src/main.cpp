@@ -8,8 +8,8 @@
 #include "hex_byte.h"
 #include "game.h"
 #include "SoundData.h"
-#include "XT_DAC_Audio.h"
 #include "MAX5407.h"
+#include "Game_Audio.h"
 
 void menu_display();
 void menu_clear();
@@ -58,6 +58,7 @@ byte mode_index = 0;
 uint8_t timer_counter = 0;  // time counter (global variable)
 unsigned long timer_1 = 0;    // timer variable (global variable)
 
+static byte max_volume = 31;
 static byte cs_pin = 12;
 static byte ud_pin = 27;
 static byte initial = 0;
@@ -66,8 +67,9 @@ Digipot digipot(cs_pin, ud_pin, initial);
 byte brightness = 0;
 byte volume = 10;
 
-XT_Wav_Class ForceWithYou(Force);     // create an object of type XT_Wav_Class that is used by the dac audio class (below), passing wav data as parameter.
-XT_DAC_Audio_Class DacAudio(A0,0);    // Create the main player class object. Use A0, one of the 2 DAC pins and timer 0
+Game_Audio_Class GameAudio(A0,0);
+Game_Audio_Wav_Class pmDeath(pacmanDeath); // pacman dyingsound
+Game_Audio_Wav_Class pmWav(pacman); // pacman theme
 
 LCDMenuLib2_menu LCDML_0 (255, 0, 0, NULL, NULL); // root menu element (do not change)
 LCDMenuLib2 LCDML(LCDML_0, DISP_rows, DISP_cols, menu_display, menu_clear, menu_control);
@@ -87,10 +89,10 @@ LCDML_addAdvanced (11, LCDML_0_2  , 3 , NULL,          "Monitor Battery" , monit
 LCDML_addAdvanced (12, LCDML_0_2  , 4 , NULL,          "Save Changes"    , save_settings,       0,    _LCDML_TYPE_default);
 LCDML_add         (13, LCDML_0_2  , 5 , "Back"                           , back);
 LCDML_add         (14, LCDML_0    , 3 , "Testing"                        , NULL);
-LCDML_addAdvanced (15, LCDML_0_3  , 1 , NULL,          "Sound Demo"      , sound_demo,          0,    _LCDML_TYPE_default);
+LCDML_add         (15, LCDML_0_3  , 1 , "Sound Demo"                     , sound_demo);
 //LCDML_addAdvanced (16, LCDML_0_3  , 2 , NULL,          ""                , volume_control,      0,    _LCDML_TYPE_dynParam);
 LCDML_add         (16, LCDML_0_3  , 3 , "Back"                           , back);
-LCDML_addAdvanced (17 , LCDML_0   , 4 , COND_hide,     "screensaver"     , screensaver,         0,    _LCDML_TYPE_default);       // this menu function can be found on "LCDML_display_menuFunction" tab
+LCDML_addAdvanced (17 , LCDML_0   , 4 , COND_hide,     "screensaver"     , screensaver,         0,    _LCDML_TYPE_default);
 #define DISP_cnt   17 // this value must be the same as the last menu element
 LCDML_createMenu(DISP_cnt);
 
@@ -102,10 +104,10 @@ void setup()
 	u8g2.begin();
   u8g2.setContrast(brightness);
 
-	digipot.set_tap(volume);
-
-	Serial.begin(115200);                // start serial
+	Serial.begin(115200);
 	Serial.println("Hexed");
+
+	digipot.set_tap(volume);
 
 	mcp.begin(); // use default address 0
 	mcp.pinMode(0, INPUT);
@@ -326,22 +328,33 @@ void sound_demo(uint8_t param)
 
 	if(LCDML.FUNC_loop())           // ****** LOOP *********
 	{
-		//play_sound(0);
+		if(LCDML.BT_checkEnter())
+		{
+			play_sound(0);
+		}
 	}
 
-	if(LCDML.FUNC_close())      // ****** STABLE END *********
-	{
-		// you can here reset some global vars or do nothing
-	}
+	if(LCDML.FUNC_close()){}
 }
 
 void play_sound(uint8_t param)
 {
-	Serial.println(ForceWithYou.Completed);
-	if(ForceWithYou.Completed)
-	{
-		DacAudio.PlayWav(&ForceWithYou);
-	}
+
+	Serial.print("Pacman Theme Sample Rate (Hz):");
+	Serial.println(pmWav.getSampleRate());
+	Serial.print("Duration (secs):");
+	Serial.println(pmWav.getDuration());
+
+	GameAudio.PlayWav(&pmWav, false, 1.0);
+	// wait until done
+	while(GameAudio.IsPlaying()){		}
+
+	delay(200);
+
+	GameAudio.PlayWav(&pmDeath, false, 1.0);
+	// wait until done
+	while(GameAudio.IsPlaying()){}
+	
 }
 
 float get_battery_voltage()
@@ -389,18 +402,26 @@ void volume_control(uint8_t line)
 	if (line == LCDML.MENU_getCursorPos()){
 		if(LCDML.BT_checkAny()){
 			if(LCDML.BT_checkLeft()){
-				volume++;
 				LCDML.BT_resetLeft();
-				digipot.set_tap(volume);
-				volume = digipot.get_tap();
-				Serial.println(digipot.get_tap());
+				volume++;
+				if (volume > max_volume)
+					volume = max_volume;
+				else
+				{
+					digipot.set_tap(volume);
+					volume = digipot.get_tap();
+					Serial.println(digipot.get_tap());
+				}
 			}
 			if(LCDML.BT_checkRight()){
-				volume--;
 				LCDML.BT_resetRight();
-				digipot.set_tap(volume);
-				volume = digipot.get_tap();
-				Serial.println(digipot.get_tap());
+				if (volume > 0)
+				{
+					volume--;
+					digipot.set_tap(volume);
+					volume = digipot.get_tap();
+					Serial.println(digipot.get_tap());
+				}
 			}
 		}
 	}
@@ -420,10 +441,29 @@ void load_settings()
 
 void save_settings(uint8_t param)
 {
-	preferences.begin("hex_game", false);
-	preferences.putUChar("brightness", brightness);
-	preferences.putUChar("volume", volume);
-	preferences.end();
+	if(LCDML.FUNC_setup())
+	{
+		u8g2.setFont(DISP_font);
+		u8g2.firstPage();
+		do {
+			u8g2.drawStr( 0, (DISP_font_h * 1), "Saving to EEPROM");
+		} while( u8g2.nextPage() );
+
+		preferences.begin("hex_game", false);
+		preferences.putUChar("brightness", brightness);
+		preferences.putUChar("volume", volume);
+		preferences.end();
+		//LCDML.FUNC_setLoopInterval(1000);  // starts a trigger event for the loop function every 100 milliseconds
+	}
+
+	if(LCDML.FUNC_loop())
+	{
+		LCDML.FUNC_goBackToMenu();
+	}
+
+	if(LCDML.FUNC_close()){
+		LCDML.MENU_goRoot();
+	}
 }
 
 boolean COND_hide()  // hide a menu element

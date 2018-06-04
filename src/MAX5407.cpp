@@ -90,5 +90,5 @@ void Digipot::do_delay()
 {
   if(debug)
     Serial.print("_");
-  delayMicroseconds(1);
+  //delayMicroseconds(1);
 }
