@@ -61,6 +61,7 @@ Here are the data Positions in the wav file specification.
 
 
 */
+#include <Arduino.h>
 
 #define ESP32_F_CPU 				80000000  // the speed of the processor
 #define AUDIO_INTERRUPT_PRESCALER 	80

@@ -21,6 +21,7 @@ void brightness_control(uint8_t line);
 void volume_control(uint8_t line);
 void load_settings();
 void save_settings(uint8_t param);
+void font_demo(uint8_t param);
 void start_game(byte game_type);
 void encoder_hex_control();
 void encoder_dec_control();
@@ -90,10 +91,11 @@ LCDML_addAdvanced (12, LCDML_0_2  , 4 , NULL,          "Save Changes"    , save_
 LCDML_add         (13, LCDML_0_2  , 5 , "Back"                           , back);
 LCDML_add         (14, LCDML_0    , 3 , "Testing"                        , NULL);
 LCDML_add         (15, LCDML_0_3  , 1 , "Sound Demo"                     , sound_demo);
+LCDML_add         (16, LCDML_0_3  , 2 , "Font Demo"                     , font_demo);
 //LCDML_addAdvanced (16, LCDML_0_3  , 2 , NULL,          ""                , volume_control,      0,    _LCDML_TYPE_dynParam);
-LCDML_add         (16, LCDML_0_3  , 3 , "Back"                           , back);
-LCDML_addAdvanced (17 , LCDML_0   , 4 , COND_hide,     "screensaver"     , screensaver,         0,    _LCDML_TYPE_default);
-#define DISP_cnt   17 // this value must be the same as the last menu element
+LCDML_add         (17, LCDML_0_3  , 3 , "Back"                           , back);
+LCDML_addAdvanced (18 , LCDML_0   , 4 , COND_hide,     "screensaver"     , screensaver,         0,    _LCDML_TYPE_default);
+#define DISP_cnt   18 // this value must be the same as the last menu element
 LCDML_createMenu(DISP_cnt);
 
 void setup()
@@ -321,7 +323,7 @@ void sound_demo(uint8_t param)
 		u8g2.setFont(DISP_font);
 		u8g2.firstPage();
 		do {
-			u8g2.drawStr( 0, (DISP_font_h * 1), "Playing Sound");
+			u8g2.drawStr( 0, (DISP_font_h * 1), "Press button for sound");
 			u8g2.drawStr( 0, (DISP_font_h * 2), "Press Back");
 		} while( u8g2.nextPage() );
 	}
@@ -339,7 +341,6 @@ void sound_demo(uint8_t param)
 
 void play_sound(uint8_t param)
 {
-
 	Serial.print("Pacman Theme Sample Rate (Hz):");
 	Serial.println(pmWav.getSampleRate());
 	Serial.print("Duration (secs):");
@@ -354,7 +355,6 @@ void play_sound(uint8_t param)
 	GameAudio.PlayWav(&pmDeath, false, 1.0);
 	// wait until done
 	while(GameAudio.IsPlaying()){}
-	
 }
 
 float get_battery_voltage()
@@ -458,7 +458,39 @@ void save_settings(uint8_t param)
 
 	if(LCDML.FUNC_loop())
 	{
+		delay(500);
 		LCDML.FUNC_goBackToMenu();
+	}
+
+	if(LCDML.FUNC_close()){
+		LCDML.MENU_goRoot();
+	}
+}
+
+void font_demo(uint8_t param)
+{
+	if(LCDML.FUNC_setup())
+	{
+		u8g2.setFont(DISP_font);
+		u8g2.firstPage();
+		do {
+			u8g2.setFontMode(1);  /* activate transparent font mode */
+			u8g2.setDrawColor(1); /* color 1 for the box */
+			u8g2.drawBox(22, 2, 35, 50);
+			//u8g2.setFont(u8g2.font_ncenB14_tf);
+			u8g2.setDrawColor(0);
+			u8g2.drawStr(5, 18, "abcd");
+			u8g2.setDrawColor(1);
+			u8g2.drawStr(5, 33, "abcd");
+			u8g2.setDrawColor(2);
+			u8g2.drawStr(5, 48, "abcd");
+		} while( u8g2.nextPage() );
+	}
+
+	if(LCDML.FUNC_loop())
+	{
+		if(LCDML.BT_checkAny())
+				LCDML.FUNC_goBackToMenu();
 	}
 
 	if(LCDML.FUNC_close()){
@@ -478,6 +510,7 @@ void menu_clear()
 void menu_display()
 {
 	u8g2.setFont(DISP_font);
+	u8g2.setFontMode(1);  /* activate transparent font mode */
 	char content_text[DISP_cols];  // save the content text of every menu element
 	// menu element object
 	LCDMenuLib2_menu *tmp;
@@ -497,6 +530,11 @@ void menu_display()
 		n = 0;
 		i = LCDML.MENU_getScroll();
 		// check if this element has children
+
+		u8g2.setDrawColor(1);
+		u8g2.drawBox(DISP_box_x0, DISP_box_y0 + 2 + DISP_font_h * (LCDML.MENU_getCursorPos()), DISP_w - 12  , DISP_font_h + 1);
+		u8g2.setDrawColor(2);
+
 		if ((tmp = LCDML.MENU_getObj()->getChild(LCDML.MENU_getScroll())))
 		{
 			do
@@ -506,7 +544,7 @@ void menu_display()
 					if(tmp->checkType_menu() == true)
 					{
 						LCDML_getContent(content_text, tmp->getID());
-						u8g2.drawStr( DISP_box_x0+DISP_font_w + DISP_cur_space_behind, DISP_box_y0 + DISP_font_h * (n + 1), content_text);
+						u8g2.drawStr( DISP_box_x0+DISP_font_w, DISP_box_y0 + DISP_font_h * (n + 1), content_text);
 					}
 					else
 					{
@@ -521,7 +559,8 @@ void menu_display()
 			} while (((tmp = tmp->getSibling(1)) != NULL) && (i < maxi));
 		}
 		// set cursor
-		u8g2.drawStr( DISP_box_x0+DISP_cur_space_before, DISP_box_y0 + DISP_font_h * (LCDML.MENU_getCursorPos() + 1),  DISP_cursor_char);
+		//u8g2.drawStr( DISP_box_x0+DISP_cur_space_before, DISP_box_y0 + DISP_font_h * (LCDML.MENU_getCursorPos() + 1),  DISP_cursor_char);
+		u8g2.setDrawColor(1);
 		// display scrollbar when more content as rows available and with > 2
 		if (scrollbar_max > n_max && DISP_scrollbar_w > 2)
 		{
