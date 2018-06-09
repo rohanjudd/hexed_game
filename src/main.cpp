@@ -63,14 +63,15 @@ static byte max_volume = 31;
 static byte cs_pin = 12;
 static byte ud_pin = 27;
 static byte initial = 0;
+static byte amp_shutdown = 13;
 Digipot digipot(cs_pin, ud_pin, initial);
 
 byte brightness = 0;
 byte volume = 10;
 
 Game_Audio_Class GameAudio(A0,0);
-Game_Audio_Wav_Class pmDeath(pacmanDeath); // pacman dyingsound
-Game_Audio_Wav_Class pmWav(pacman); // pacman theme
+Game_Audio_Wav_Class pmDeath(success); // pacman dyingsound
+Game_Audio_Wav_Class pmWav(denied); // pacman theme
 
 LCDMenuLib2_menu LCDML_0 (255, 0, 0, NULL, NULL); // root menu element (do not change)
 LCDMenuLib2 LCDML(LCDML_0, DISP_rows, DISP_cols, menu_display, menu_clear, menu_control);
@@ -110,6 +111,9 @@ void setup()
 	Serial.println("Hexed");
 
 	digipot.set_tap(volume);
+
+	pinMode(amp_shutdown, OUTPUT);
+	digitalWrite(amp_shutdown, LOW);
 
 	mcp.begin(); // use default address 0
 	mcp.pinMode(0, INPUT);
@@ -229,7 +233,8 @@ void game_screen(String target, String guess, int score)
 
 void check_guess(){
         if (games[mode_index].check_guess(guess)) {
-                delay(500);
+								GameAudio.PlayWav(&pmDeath, false, 1.3);
+                //delay(500);
                 guess = 0;
 								binary_guess = 0;
                 reset_encoders();
@@ -332,7 +337,7 @@ void sound_demo(uint8_t param)
 	{
 		if(LCDML.BT_checkEnter())
 		{
-			play_sound(0);
+			play_sound(last_button_byte);
 		}
 	}
 
@@ -341,20 +346,42 @@ void sound_demo(uint8_t param)
 
 void play_sound(uint8_t param)
 {
-	Serial.print("Pacman Theme Sample Rate (Hz):");
-	Serial.println(pmWav.getSampleRate());
-	Serial.print("Duration (secs):");
-	Serial.println(pmWav.getDuration());
-
-	GameAudio.PlayWav(&pmWav, false, 1.0);
-	// wait until done
-	while(GameAudio.IsPlaying()){		}
-
-	delay(200);
-
-	GameAudio.PlayWav(&pmDeath, false, 1.0);
-	// wait until done
-	while(GameAudio.IsPlaying()){}
+	switch(param)
+	{
+		case 1: {
+						GameAudio.PlayWav(&pmWav, false, 1.0);
+						break;
+		}
+		case 2: {
+						GameAudio.PlayWav(&pmWav, false, 1.1);
+						break;
+		}
+		case 4: {
+						GameAudio.PlayWav(&pmWav, false, 1.2);
+						break;
+		}
+		case 8: {
+						GameAudio.PlayWav(&pmWav, false, 1.3);
+						break;
+		}
+		case 16: {
+						GameAudio.PlayWav(&pmDeath, false, 1.0);
+						break;
+		}
+		case 32: {
+						GameAudio.PlayWav(&pmDeath, false, 1.1);
+						break;
+		}
+		case 64: {
+						GameAudio.PlayWav(&pmDeath, false, 1.2);
+						break;
+		}
+		case 128: {
+						GameAudio.PlayWav(&pmDeath, false, 1.3);
+						break;
+		}
+	}
+	//while(GameAudio.IsPlaying()){		}
 }
 
 float get_battery_voltage()

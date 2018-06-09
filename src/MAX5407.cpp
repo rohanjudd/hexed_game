@@ -6,7 +6,7 @@
 static byte top_tap = 31;
 static boolean UP   = true;
 static boolean DOWN = false;
-static boolean debug = true;
+static boolean debug = false;
 
 Digipot::Digipot(byte cs_pin, byte ud_pin, byte value)
 {
