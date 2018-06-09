@@ -70,8 +70,9 @@ byte brightness = 0;
 byte volume = 10;
 
 Game_Audio_Class GameAudio(A0,0);
-Game_Audio_Wav_Class pmDeath(success); // pacman dyingsound
-Game_Audio_Wav_Class pmWav(denied); // pacman theme
+Game_Audio_Wav_Class success_wav(success);
+Game_Audio_Wav_Class voice_wav(denied);
+Game_Audio_Wav_Class beep_wav(beep);
 
 LCDMenuLib2_menu LCDML_0 (255, 0, 0, NULL, NULL); // root menu element (do not change)
 LCDMenuLib2 LCDML(LCDML_0, DISP_rows, DISP_cols, menu_display, menu_clear, menu_control);
@@ -123,6 +124,8 @@ void setup()
 	LCDML_setup(DISP_cnt);
 	LCDML.MENU_enRollover();
 	LCDML.SCREEN_enable(screensaver, 20000); // set to 10 seconds
+
+	GameAudio.PlayWav(&success_wav, false, 1.3);
 
 	games[0].set_modes(0,1);
 	games[1].set_modes(1,0);
@@ -233,11 +236,12 @@ void game_screen(String target, String guess, int score)
 
 void check_guess(){
         if (games[mode_index].check_guess(guess)) {
-								GameAudio.PlayWav(&pmDeath, false, 1.3);
-                //delay(500);
+								GameAudio.PlayWav(&success_wav, false, 1.3);
+                delay(500);
                 guess = 0;
 								binary_guess = 0;
                 reset_encoders();
+								update_screen();
         }
 }
 
@@ -349,35 +353,35 @@ void play_sound(uint8_t param)
 	switch(param)
 	{
 		case 1: {
-						GameAudio.PlayWav(&pmWav, false, 1.0);
+						GameAudio.PlayWav(&voice_wav, false, 1.0);
 						break;
 		}
 		case 2: {
-						GameAudio.PlayWav(&pmWav, false, 1.1);
+						GameAudio.PlayWav(&voice_wav, false, 1.1);
 						break;
 		}
 		case 4: {
-						GameAudio.PlayWav(&pmWav, false, 1.2);
+						GameAudio.PlayWav(&voice_wav, false, 1.2);
 						break;
 		}
 		case 8: {
-						GameAudio.PlayWav(&pmWav, false, 1.3);
+						GameAudio.PlayWav(&voice_wav, false, 1.3);
 						break;
 		}
 		case 16: {
-						GameAudio.PlayWav(&pmDeath, false, 1.0);
+						GameAudio.PlayWav(&success_wav, false, 1.0);
 						break;
 		}
 		case 32: {
-						GameAudio.PlayWav(&pmDeath, false, 1.1);
+						GameAudio.PlayWav(&success_wav, false, 1.1);
 						break;
 		}
 		case 64: {
-						GameAudio.PlayWav(&pmDeath, false, 1.2);
+						GameAudio.PlayWav(&success_wav, false, 1.2);
 						break;
 		}
 		case 128: {
-						GameAudio.PlayWav(&pmDeath, false, 1.3);
+						GameAudio.PlayWav(&success_wav, false, 1.3);
 						break;
 		}
 	}
@@ -438,6 +442,7 @@ void volume_control(uint8_t line)
 					digipot.set_tap(volume);
 					volume = digipot.get_tap();
 					Serial.println(digipot.get_tap());
+					GameAudio.PlayWav(&beep_wav, false, 1.0);
 				}
 			}
 			if(LCDML.BT_checkRight()){
@@ -448,6 +453,7 @@ void volume_control(uint8_t line)
 					digipot.set_tap(volume);
 					volume = digipot.get_tap();
 					Serial.println(digipot.get_tap());
+					GameAudio.PlayWav(&beep_wav, false, 1.0);
 				}
 			}
 		}
