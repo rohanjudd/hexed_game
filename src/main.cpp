@@ -69,10 +69,13 @@ Digipot digipot(cs_pin, ud_pin, initial);
 byte brightness = 0;
 byte volume = 10;
 
+
 Game_Audio_Class GameAudio(A0,0);
 Game_Audio_Wav_Class success_wav(success);
 Game_Audio_Wav_Class voice_wav(denied);
 Game_Audio_Wav_Class beep_wav(beep);
+byte num_sounds = 3;
+byte sound_index = 0;
 
 LCDMenuLib2_menu LCDML_0 (255, 0, 0, NULL, NULL); // root menu element (do not change)
 LCDMenuLib2 LCDML(LCDML_0, DISP_rows, DISP_cols, menu_display, menu_clear, menu_control);
@@ -329,20 +332,52 @@ void sound_demo(uint8_t param)
 {
 	if(LCDML.FUNC_setup())          // ****** SETUP *********
 	{
+		sound_index = 0;
+		char buf[20];
+		sprintf (buf, "Sample %d", sound_index);
 		u8g2.setFont(DISP_font);
 		u8g2.firstPage();
 		do {
-			u8g2.drawStr( 0, (DISP_font_h * 1), "Press button for sound");
-			u8g2.drawStr( 0, (DISP_font_h * 2), "Press Back");
+			u8g2.drawStr( 0, (DISP_font_h * 1), buf);
 		} while( u8g2.nextPage() );
 	}
 
 	if(LCDML.FUNC_loop())           // ****** LOOP *********
 	{
-		if(LCDML.BT_checkEnter())
-		{
-			play_sound(last_button_byte);
-		}
+		char buf[20];
+		sprintf (buf, "Sample %d", sound_index);
+		u8g2.setFont(DISP_font);
+		u8g2.firstPage();
+		do {
+			u8g2.drawStr( 0, (DISP_font_h * 1), buf);
+		} while( u8g2.nextPage() );
+
+		if(LCDML.BT_checkAny()){
+
+			if(LCDML.BT_checkUp()){
+				LCDML.BT_resetUp();
+				sound_index++;
+				if (sound_index > num_sounds - 1)
+					sound_index = num_sounds - 1;
+			}
+
+			if(LCDML.BT_checkDown()){
+				LCDML.BT_resetDown();
+				if (sound_index > 0)
+				{
+					sound_index--;
+				}
+				else
+				{
+					sound_index = 0;
+				}
+			}
+
+			if(LCDML.BT_checkEnter())
+			{
+				play_sound(last_button_byte);
+			}
+	}
 	}
 
 	if(LCDML.FUNC_close()){}
@@ -353,35 +388,35 @@ void play_sound(uint8_t param)
 	switch(param)
 	{
 		case 1: {
-						GameAudio.PlayWav(&voice_wav, false, 1.0);
+						GameAudio.PlayWav(&voice_wav, true, 1.0);
 						break;
 		}
 		case 2: {
-						GameAudio.PlayWav(&voice_wav, false, 1.1);
+						GameAudio.PlayWav(&voice_wav, true, 1.1);
 						break;
 		}
 		case 4: {
-						GameAudio.PlayWav(&voice_wav, false, 1.2);
+						GameAudio.PlayWav(&voice_wav, true, 1.2);
 						break;
 		}
 		case 8: {
-						GameAudio.PlayWav(&voice_wav, false, 1.3);
+						GameAudio.PlayWav(&voice_wav, true, 1.3);
 						break;
 		}
 		case 16: {
-						GameAudio.PlayWav(&success_wav, false, 1.0);
+						GameAudio.PlayWav(&success_wav, true, 1.0);
 						break;
 		}
 		case 32: {
-						GameAudio.PlayWav(&success_wav, false, 1.1);
+						GameAudio.PlayWav(&success_wav, true, 1.1);
 						break;
 		}
 		case 64: {
-						GameAudio.PlayWav(&success_wav, false, 1.2);
+						GameAudio.PlayWav(&success_wav, true, 1.2);
 						break;
 		}
 		case 128: {
-						GameAudio.PlayWav(&success_wav, false, 1.3);
+						GameAudio.PlayWav(&success_wav, true, 1.3);
 						break;
 		}
 	}
