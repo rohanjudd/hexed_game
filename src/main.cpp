@@ -66,6 +66,8 @@ static byte initial = 0;
 static byte amp_shutdown = 13;
 Digipot digipot(cs_pin, ud_pin, initial);
 
+static byte charge_pin = A2;
+
 byte brightness = 0;
 byte volume = 10;
 
@@ -119,10 +121,25 @@ void setup()
 	pinMode(amp_shutdown, OUTPUT);
 	digitalWrite(amp_shutdown, LOW);
 
+	pinMode(charge_pin, INPUT_PULLUP);
+
 	mcp.begin(); // use default address 0
 	mcp.pinMode(0, INPUT);
 	for(int i=0; i<=9; i++)
 		mcp.pullUp(i, HIGH);
+	mcp.pinMode(10, OUTPUT);
+	mcp.pinMode(11, OUTPUT);
+	mcp.pinMode(12, OUTPUT);
+
+	mcp.digitalWrite(10, HIGH);
+	mcp.digitalWrite(11, HIGH);
+	mcp.digitalWrite(12, HIGH);
+
+	delay(500);
+
+	mcp.digitalWrite(10, LOW);
+	mcp.digitalWrite(11, LOW);
+	mcp.digitalWrite(12, LOW);
 
 	LCDML_setup(DISP_cnt);
 	LCDML.MENU_enRollover();
@@ -302,7 +319,10 @@ void monitor_battery(uint8_t param)
 		u8g2.firstPage();
 		do {
 			u8g2.drawStr( 0, (DISP_font_h * 1), buf);
-			u8g2.drawStr( 0, (DISP_font_h * 2), "Press Back");
+			if(digitalRead(charge_pin))
+				u8g2.drawStr( 0, (DISP_font_h * 2), "Not Charging");
+			else
+				u8g2.drawStr( 0, (DISP_font_h * 2), "Charging");
 		} while( u8g2.nextPage() );
 
 		LCDML.FUNC_setLoopInterval(500);  // starts a trigger event for the loop function every 100 milliseconds
@@ -318,7 +338,10 @@ void monitor_battery(uint8_t param)
 		u8g2.firstPage();
 		do {
 			u8g2.drawStr( 0, (DISP_font_h * 1), buf);
-			u8g2.drawStr( 0, (DISP_font_h * 2), "Press Back");
+			if(digitalRead(charge_pin))
+				u8g2.drawStr( 0, (DISP_font_h * 2), "Not Charging");
+			else
+				u8g2.drawStr( 0, (DISP_font_h * 2), "Charging");
 		} while( u8g2.nextPage() );
 	}
 
