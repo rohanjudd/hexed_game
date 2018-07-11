@@ -38,13 +38,14 @@ byte encoder_a_read();
 byte encoder_b_read();
 boolean COND_hide();
 
-U8G2_SSD1306_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
+//U8G2_SSD1306_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
+U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
 Adafruit_MCP23017 mcp;
 Preferences preferences;
 
 Encoder encoder_a(15,33);
 bool  a_button_last = true;
-Encoder encoder_b(32,14);
+Encoder encoder_b(14,32);
 bool  b_button_last = true;
 byte battery_mon = A13;
 
@@ -415,15 +416,15 @@ void play_sound(uint8_t param)
 						break;
 		}
 		case 2: {
-						GameAudio.PlayWav(&voice_wav, true, 1.1);
+						GameAudio.PlayWav(&voice_wav, true, 1.059);
 						break;
 		}
 		case 4: {
-						GameAudio.PlayWav(&voice_wav, true, 1.2);
+						GameAudio.PlayWav(&voice_wav, true, 1.118);
 						break;
 		}
 		case 8: {
-						GameAudio.PlayWav(&voice_wav, true, 1.3);
+						GameAudio.PlayWav(&voice_wav, true, 1.177);
 						break;
 		}
 		case 16: {
@@ -431,15 +432,15 @@ void play_sound(uint8_t param)
 						break;
 		}
 		case 32: {
-						GameAudio.PlayWav(&success_wav, true, 1.1);
+						GameAudio.PlayWav(&success_wav, true, 1.059);
 						break;
 		}
 		case 64: {
-						GameAudio.PlayWav(&success_wav, true, 1.2);
+						GameAudio.PlayWav(&success_wav, true, 1.118);
 						break;
 		}
 		case 128: {
-						GameAudio.PlayWav(&success_wav, true, 1.3);
+						GameAudio.PlayWav(&success_wav, true, 1.177);
 						break;
 		}
 	}
@@ -680,8 +681,8 @@ void menu_control(void)
 
 	long encoder_a_pos = encoder_a.read();
   long encoder_b_pos = encoder_b.read();
-	bool button_a  = !mcp.digitalRead(9);
-  bool button_b  = !mcp.digitalRead(8);
+	bool button_a  = !mcp.digitalRead(8);
+  bool button_b  = !mcp.digitalRead(9);
 
 	if(encoder_a_pos >= 3) {
 		LCDML.BT_down();
