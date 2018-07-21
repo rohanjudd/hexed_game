@@ -1,7 +1,7 @@
 /*
    MAX5407.h - Class for hex byte object
  */
-#include "Arduino.h"
+#include <Arduino.h>
 
 class Digipot
 {

@@ -8,8 +8,8 @@
 #include "hex_byte.h"
 #include "game.h"
 #include "SoundData.h"
-#include "MAX5407.h"
-#include "Game_Audio.h"
+#include <MAX5407.h>
+#include <Game_Audio.h>
 
 void menu_display();
 void menu_clear();
@@ -72,7 +72,6 @@ static byte charge_pin = A2;
 byte brightness = 0;
 byte volume = 10;
 
-
 Game_Audio_Class GameAudio(A0,0);
 Game_Audio_Wav_Class success_wav(success);
 Game_Audio_Wav_Class voice_wav(denied);
@@ -133,18 +132,11 @@ void setup()
 	mcp.pinMode(12, OUTPUT);
 
 	mcp.digitalWrite(10, HIGH);
-	mcp.digitalWrite(11, HIGH);
-	mcp.digitalWrite(12, HIGH);
-
-	delay(500);
-
-	mcp.digitalWrite(10, LOW);
 	mcp.digitalWrite(11, LOW);
-	mcp.digitalWrite(12, LOW);
 
 	LCDML_setup(DISP_cnt);
-	LCDML.MENU_enRollover();
-	LCDML.SCREEN_enable(screensaver, 20000); // set to 10 seconds
+	//LCDML.MENU_enRollover();
+	LCDML.SCREEN_enable(screensaver, 40000); // set to 40 seconds
 
 	GameAudio.PlayWav(&success_wav, false, 1.3);
 
@@ -187,9 +179,12 @@ void start_game(byte game_type)
                 break;
         }
 			}
+			if(LCDML.BT_checkEnter()){
+				check_guess();
+			}
 		}
 		update_screen();
-		check_guess();
+		//check_guess();
 	}
 	if(LCDML.FUNC_close()){}
 }
@@ -246,6 +241,9 @@ void game_screen(String target, String guess, int score)
 {
 	u8g2.firstPage();
 	do {
+		u8g2.setDrawColor(1);
+		u8g2.drawBox(0, 22, 128, 20);
+		u8g2.setDrawColor(2);
 		u8g2.setCursor(0, 18);
 		u8g2.print(target);
 		u8g2.setCursor(0, 40);
@@ -301,12 +299,12 @@ void screensaver(uint8_t param)
 	if(LCDML.FUNC_loop())
 	{
 		if (LCDML.BT_checkAny()){
-			LCDML.FUNC_goBackToMenu();
+			//LCDML.FUNC_goBackToMenu();
 		}
 	}
 
 	if(LCDML.FUNC_close()){
-		LCDML.MENU_goRoot();
+		//LCDML.MENU_goRoot();
 	}
 }
 
@@ -657,19 +655,19 @@ void menu_display()
 		if (scrollbar_max > n_max && DISP_scrollbar_w > 2)
 		{
 			// set frame for scrollbar
-			u8g2.drawFrame(DISP_box_x1 - DISP_scrollbar_w, DISP_box_y0, DISP_scrollbar_w, DISP_box_y1-DISP_box_y0);
+			//u8g2.drawFrame(DISP_box_x1 - DISP_scrollbar_w, DISP_box_y0, DISP_scrollbar_w, DISP_box_y1-DISP_box_y0);
 			// calculate scrollbar length
 			uint8_t scrollbar_block_length = scrollbar_max - n_max;
 			scrollbar_block_length = (DISP_box_y1-DISP_box_y0) / (scrollbar_block_length + DISP_rows);
 			//set scrollbar
 			if (scrollbar_cur_pos == 0) {                                   // top position     (min)
-				u8g2.drawBox(DISP_box_x1 - (DISP_scrollbar_w-1), DISP_box_y0 + 1                                                     , (DISP_scrollbar_w-2)  , scrollbar_block_length);
+				//u8g2.drawBox(DISP_box_x1 - (DISP_scrollbar_w-1), DISP_box_y0 + 1                                                     , (DISP_scrollbar_w-2)  , scrollbar_block_length);
 			}
 			else if (scrollbar_cur_pos == (scrollbar_max-1)) {            // bottom position  (max)
-				u8g2.drawBox(DISP_box_x1 - (DISP_scrollbar_w-1), DISP_box_y1 - scrollbar_block_length                                , (DISP_scrollbar_w-2)  , scrollbar_block_length);
+				//u8g2.drawBox(DISP_box_x1 - (DISP_scrollbar_w-1), DISP_box_y1 - scrollbar_block_length                                , (DISP_scrollbar_w-2)  , scrollbar_block_length);
 			}
 			else {                                                                // between top and bottom
-				u8g2.drawBox(DISP_box_x1 - (DISP_scrollbar_w-1), DISP_box_y0 + (scrollbar_block_length * scrollbar_cur_pos + 1),(DISP_scrollbar_w-2)  , scrollbar_block_length);
+				//u8g2.drawBox(DISP_box_x1 - (DISP_scrollbar_w-1), DISP_box_y0 + (scrollbar_block_length * scrollbar_cur_pos + 1),(DISP_scrollbar_w-2)  , scrollbar_block_length);
 			}
 		}
 	} while ( u8g2.nextPage() );
