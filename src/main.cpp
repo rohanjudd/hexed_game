@@ -1,15 +1,16 @@
-#include <LCDMenuLib2.h>
+
 #include <Arduino.h>
 #include <U8g2lib.h>
 #include <Adafruit_MCP23017.h>
 #include <Encoder.h>
 #include <Preferences.h>
+#include "LCDMenuLib2.h"
+#include "SoundData.h"
+#include "MAX5407.h"
+#include "Game_Audio.h"
 #include "config.h"
 #include "hex_byte.h"
 #include "game.h"
-#include "SoundData.h"
-#include <MAX5407.h>
-#include <Game_Audio.h>
 
 void menu_display();
 void menu_clear();
@@ -83,12 +84,12 @@ LCDMenuLib2_menu LCDML_0 (255, 0, 0, NULL, NULL); // root menu element (do not c
 LCDMenuLib2 LCDML(LCDML_0, DISP_rows, DISP_cols, menu_display, menu_clear, menu_control);
 
 LCDML_addAdvanced (0 , LCDML_0    , 1 , NULL,          "Play Game"       , NULL,                0,    _LCDML_TYPE_default);
-LCDML_addAdvanced (1 , LCDML_0_1  , 1 , NULL,          "Hex to Bin"      , start_game,          0,    _LCDML_TYPE_default);
-LCDML_addAdvanced (2 , LCDML_0_1  , 2 , NULL,          "Bin to Hex"      , start_game,          1,    _LCDML_TYPE_default);
-LCDML_addAdvanced (3 , LCDML_0_1  , 3 , NULL,          "Bin to Dec"      , start_game,          2,    _LCDML_TYPE_default);
-LCDML_addAdvanced (4 , LCDML_0_1  , 4 , NULL,          "Hex to Dec"      , start_game,          3,    _LCDML_TYPE_default);
-LCDML_addAdvanced (5 , LCDML_0_1  , 5 , NULL,          "Dec to Hex"      , start_game,          4,    _LCDML_TYPE_default);
-LCDML_addAdvanced (6 , LCDML_0_1  , 6 , NULL,          "Dec to Bin"      , start_game,          5,    _LCDML_TYPE_default);
+LCDML_addAdvanced (1 , LCDML_0_1  , 1 , NULL,          "Bin to Hex"      , start_game,          0,    _LCDML_TYPE_default);
+LCDML_addAdvanced (2 , LCDML_0_1  , 2 , NULL,          "Hex to Bin"      , start_game,          1,    _LCDML_TYPE_default);
+LCDML_addAdvanced (3 , LCDML_0_1  , 3 , NULL,          "Dec to Bin"      , start_game,          2,    _LCDML_TYPE_default);
+LCDML_addAdvanced (4 , LCDML_0_1  , 4 , NULL,          "Dec to Hex"      , start_game,          3,    _LCDML_TYPE_default);
+LCDML_addAdvanced (5 , LCDML_0_1  , 5 , NULL,          "Hex to Dec"      , start_game,          4,    _LCDML_TYPE_default);
+LCDML_addAdvanced (6 , LCDML_0_1  , 6 , NULL,          "Bin to Hex"      , start_game,          5,    _LCDML_TYPE_default);
 LCDML_add         (7 , LCDML_0_1  , 7 , "Back"                           , back);
 LCDML_add         (8 , LCDML_0    , 2 , "Settings"                       , NULL);
 LCDML_addAdvanced (9 , LCDML_0_2  , 1 , NULL,          ""                , brightness_control,  0,    _LCDML_TYPE_dynParam);
@@ -150,6 +151,8 @@ void setup()
 
 void loop()
 {
+	mcp.digitalWrite(11, !digitalRead(charge_pin));
+	digitalWrite(amp_shutdown, LOW);
 	LCDML.loop();
 	delay(20);
 }
@@ -395,7 +398,7 @@ void sound_demo(uint8_t param)
 				}
 			}
 
-			if(LCDML.BT_checkEnter())
+			if(LCDML.BT_checkFree())
 			{
 				play_sound(last_button_byte);
 			}
@@ -434,7 +437,6 @@ void play_sound(uint8_t param)
 						break;
 		}
 		case 64: {
-						GameAudio.PlayWav(&success_wav, true, 1.118);
 						break;
 		}
 		case 128: {
@@ -652,6 +654,7 @@ void menu_display()
 		//u8g2.drawStr( DISP_box_x0+DISP_cur_space_before, DISP_box_y0 + DISP_font_h * (LCDML.MENU_getCursorPos() + 1),  DISP_cursor_char);
 		u8g2.setDrawColor(1);
 		// display scrollbar when more content as rows available and with > 2
+/*
 		if (scrollbar_max > n_max && DISP_scrollbar_w > 2)
 		{
 			// set frame for scrollbar
@@ -670,6 +673,7 @@ void menu_display()
 				//u8g2.drawBox(DISP_box_x1 - (DISP_scrollbar_w-1), DISP_box_y0 + (scrollbar_block_length * scrollbar_cur_pos + 1),(DISP_scrollbar_w-2)  , scrollbar_block_length);
 			}
 		}
+		*/
 	} while ( u8g2.nextPage() );
 }
 
@@ -719,7 +723,7 @@ void menu_control(void)
 						if ((bitRead(button_byte, i)) && (!bitRead(last_button_byte, i)))
 										bitWrite(binary_guess, i, !bitRead(binary_guess, i));
 		}
-		LCDML.BT_enter();
+		LCDML.BT_free();
 		last_button_byte = button_byte;
 	}
 

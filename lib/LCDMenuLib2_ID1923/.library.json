@@ -1,0 +1,41 @@
+{
+    "description": "Easy creation of a tree based menu with screensaver and multi layers.", 
+    "repository": {
+        "url": "https://github.com/Jomelo/LCDMenuLib2", 
+        "type": "git"
+    }, 
+    "platforms": [
+        "atmelavr", 
+        "espressif32", 
+        "espressif8266"
+    ], 
+    "export": {
+        "exclude": [
+            "extras", 
+            "docs", 
+            "tests", 
+            "test", 
+            "*.doxyfile", 
+            "*.pdf"
+        ], 
+        "include": null
+    }, 
+    "authors": [
+        {
+            "maintainer": true, 
+            "name": "Nils Feldkaemper", 
+            "url": null, 
+            "email": "nilsfeld@gmail.com"
+        }
+    ], 
+    "keywords": [
+        "display"
+    ], 
+    "id": 1923, 
+    "name": "LCDMenuLib2", 
+    "frameworks": [
+        "arduino"
+    ], 
+    "version": "1.2.7", 
+    "homepage": null
+}
