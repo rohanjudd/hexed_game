@@ -20,7 +20,7 @@ void highlight_choice(byte cursor_pos);
 void hexagon_test();
 void draw_hexagon(byte x, byte y, byte radius);
 void drawString(unsigned char x, unsigned char y, const char* s);
-void update_screen(String target, String guess, int score);
+void noise();
 void firstPage();
 boolean nextPage();
 }

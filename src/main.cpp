@@ -74,7 +74,6 @@ byte volume = 10;
 
 Game_Audio_Class GameAudio(A0,0);
 Game_Audio_Wav_Class success_wav(success);
-Game_Audio_Wav_Class voice_wav(denied);
 Game_Audio_Wav_Class beep_wav(beep);
 Game_Audio_Wav_Class error_wav(error);
 Game_Audio_Wav_Class level_wav(level);
@@ -341,15 +340,15 @@ void play_sound(uint8_t param)
 	switch(param)
 	{
 		case 1: {
-						GameAudio.PlayWav(&voice_wav, true, 1.0);
+						GameAudio.PlayWav(&beep_wav, true, 1.0);
 						break;
 		}
 		case 2: {
-						GameAudio.PlayWav(&voice_wav, true, 1.0);
+						GameAudio.PlayWav(&beep_wav, true, 1.0);
 						break;
 		}
 		case 4: {
-						GameAudio.PlayWav(&voice_wav, true, 1.0);
+						GameAudio.PlayWav(&beep_wav, true, 1.0);
 						break;
 		}
 		case 8: {

@@ -38,14 +38,18 @@ void game_screen(String target, String guess, int score)
 	u8g2.firstPage();
 	do {
 		u8g2.setDrawColor(1);
-		u8g2.drawBox(0, 22, 128, 20);
+		u8g2.drawBox(0, 42, 128, 20);
 		u8g2.setDrawColor(2);
-		u8g2.setCursor(0, 18);
-		u8g2.print(target);
-		u8g2.setCursor(0, 40);
-		u8g2.print(guess);
-		u8g2.setCursor(0, 60);
+    u8g2.setFont(DISP_font);
+    u8g2.setCursor(60, 12);
+    u8g2.print("score:");
+		u8g2.setCursor(100, 12);
 		u8g2.print(score);
+    u8g2.setFont(u8g2_font_inb16_mr); // choose a suitable font
+		u8g2.setCursor(9, 40);
+		u8g2.print(target);
+		u8g2.setCursor(9, 60);
+		u8g2.print(guess);
 	} while( u8g2.nextPage() );
 }
 
@@ -115,6 +119,15 @@ void splash_text(String s)
         u8g2.setCursor(29, 36);
         u8g2.print(s);
         u8g2.sendBuffer(); // transfer internal memory to the display
+        delay(500);
+        for(int x=30; x>0; x--)
+        {
+        noise();
+        u8g2.sendBuffer(); // transfer internal memory to the display
+        delay(50);
+        }
+        u8g2.clearBuffer(); // clear the internal memory
+        u8g2.sendBuffer(); // transfer internal memory to the display
 }
 
 void hexagon_test()
@@ -154,18 +167,6 @@ void drawString(unsigned char x, unsigned char y, const char* s)
   u8g2.setDrawColor(1);
 }
 
-void update_screen(String target, String guess, int score)
-{
-        u8g2.clearBuffer();   // clear the internal memory
-        u8g2.setCursor(0, 18);
-        u8g2.print(target);
-        u8g2.setCursor(0, 40);
-        u8g2.print(guess);
-        u8g2.setCursor(0, 60);
-        u8g2.print(score);
-        u8g2.sendBuffer();
-}
-
 void firstPage()
 {
   u8g2.firstPage();
@@ -174,6 +175,20 @@ void firstPage()
 boolean nextPage()
 {
   return u8g2.nextPage();
+}
+
+void noise()
+{
+  u8g2.setDrawColor(0);
+  for(int x=0; x < 128; x++)
+  {
+    for(int y=0; y < 64; y++)
+    {
+      if (!(int)random(10))
+        u8g2.drawPixel(x,y);
+    }
+  }
+  u8g2.setDrawColor(1);
 }
 
 }
