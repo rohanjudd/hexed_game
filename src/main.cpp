@@ -159,8 +159,9 @@ void loop()
 void splash()
 {
 	display::splash_text("hexed");
-	delay(500);
+	delay(100);
 }
+
 void start_game(byte game_type)
 {
 	if(LCDML.FUNC_setup())
@@ -189,7 +190,10 @@ void start_game(byte game_type)
 		}
 
 	}
-	if(LCDML.FUNC_close()){}
+	if(LCDML.FUNC_close()){
+		binary_guess = 0;
+		guess = 0;
+	}
 }
 
 void update_game_screen()
@@ -220,6 +224,7 @@ void encoder_dec_control()
 void check_guess(){
         if (games[mode_index].check_guess(guess)) {
 								GameAudio.PlayWav(&level_wav, true, 1.0);
+								update_game_screen();
                 delay(500);
                 guess = 0;
 								binary_guess = 0;
@@ -337,42 +342,16 @@ void sound_demo(uint8_t param)
 
 void play_sound(uint8_t param)
 {
-	switch(param)
-	{
-		case 1: {
-						GameAudio.PlayWav(&beep_wav, true, 1.0);
-						break;
-		}
-		case 2: {
-						GameAudio.PlayWav(&beep_wav, true, 1.0);
-						break;
-		}
-		case 4: {
-						GameAudio.PlayWav(&beep_wav, true, 1.0);
-						break;
-		}
-		case 8: {
-						GameAudio.PlayWav(&error_wav, true, 1.0);
-						break;
-		}
-		case 16: {
-						GameAudio.PlayWav(&rhode_wav, true, 1.0);
-						break;
-		}
-		case 32: {
-						GameAudio.PlayWav(&level_wav, true, 1.0);
-						break;
-		}
-		case 64: {
-						GameAudio.PlayWav(&hint_wav, true, 1.0);
-						break;
-		}
-		case 128: {
-						GameAudio.PlayWav(&beep_wav, true, 1.0);
-						break;
-		}
+	switch(param){
+		case 1:   { GameAudio.PlayWav(&beep_wav, true, 1.0);  break; }
+		case 2:   { GameAudio.PlayWav(&beep_wav, true, 1.0);  break; }
+		case 4:   { GameAudio.PlayWav(&beep_wav, true, 1.0);  break; }
+		case 8:   { GameAudio.PlayWav(&error_wav, true, 1.0); break; }
+		case 16:  { GameAudio.PlayWav(&rhode_wav, true, 1.0); break; }
+		case 32:  { GameAudio.PlayWav(&level_wav, true, 1.0); break; }
+		case 64:  { GameAudio.PlayWav(&hint_wav, true, 1.0);  break; }
+		case 128: { GameAudio.PlayWav(&beep_wav, true, 1.0);  break; }
 	}
-	//while(GameAudio.IsPlaying()){		}
 }
 
 void back(uint8_t param)

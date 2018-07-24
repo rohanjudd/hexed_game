@@ -17,6 +17,11 @@ void set_contrast(byte b)
   u8g2.setContrast(b);
 }
 
+void power_save(bool b)
+{
+    u8g2.setPowerSave(b);
+}
+
 void menu_screen_init()
 {
   u8g2.setFont(DISP_font);

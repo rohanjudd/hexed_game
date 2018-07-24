@@ -5,6 +5,7 @@ namespace display
 //U8G2_SSD1306_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
 void initialise();
 void set_contrast(byte b);
+void power_save(bool b);
 void splash_text(String s);
 void menu_screen_init();
 void menu_screen();
