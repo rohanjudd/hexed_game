@@ -6,7 +6,7 @@
 #define DISP_cursor_char       ">"            // cursor char
 #define DISP_cur_space_before  2              // cursor space between
 #define DISP_cur_space_behind  4              // cursor space between
-#define DISP_box_x0            0              // start point (x0, y0)
+#define DISP_box_x0            30              // start point (x0, y0)
 #define DISP_box_y0            0              // start point (x0, y0)
 #define DISP_box_x1            128            // width x  (x0 + width)
 #define DISP_box_y1            64             // hight y  (y0 + height)

@@ -2,9 +2,11 @@
 namespace display
 {
 #include "config.h"
+#include "bitmaps.h"
 
 U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
 //U8G2_SSD1306_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ A1, /* dc=*/ 21, /* reset=*/ A5);
+
 void initialise()
 {
         u8g2.begin();
@@ -132,6 +134,10 @@ void splash_text(String s)
         delay(50);
         }
         u8g2.clearBuffer(); // clear the internal memory
+        draw_battery(2.7, false);
+        u8g2.sendBuffer(); // transfer internal memory to the display
+        delay(1000);
+        u8g2.clearBuffer(); // clear the internal memory
         u8g2.sendBuffer(); // transfer internal memory to the display
 }
 
@@ -194,6 +200,12 @@ void noise()
     }
   }
   u8g2.setDrawColor(1);
+}
+
+void draw_battery(float voltage, bool state)
+{
+  u8g2.drawXBMP(0, 0, battery_width, battery_height, battery_bits);
+  u8g2.drawBox(2, 2, int((voltage-3.4)*4) , 6);
 }
 
 }

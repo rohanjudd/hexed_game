@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
 #include <Adafruit_MCP23017.h>
-#include <Encoder.h>
+#include "Encoder.h"
 #include <Preferences.h>
 #include "display.h"
 #include "LCDMenuLib2.h"
@@ -472,6 +472,7 @@ void menu_display()
 	// init vars
 	uint8_t n_max             = (LCDML.MENU_getChilds() >= DISP_rows) ? DISP_rows : (LCDML.MENU_getChilds());
 	display::firstPage();
+	display::draw_battery((analogRead(battery_mon) * 0.001772), !digitalRead(charge_pin));
 	do {
 		n = 0;
 		i = LCDML.MENU_getScroll();

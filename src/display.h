@@ -24,4 +24,5 @@ void drawString(unsigned char x, unsigned char y, const char* s);
 void noise();
 void firstPage();
 boolean nextPage();
+void draw_battery(float voltage, bool state);
 }
