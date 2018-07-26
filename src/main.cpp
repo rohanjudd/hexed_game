@@ -75,7 +75,7 @@ byte volume = 10;
 Game_Audio_Class GameAudio(A0,0);
 Game_Audio_Wav_Class success_wav(success);
 Game_Audio_Wav_Class beep_wav(beep);
-Game_Audio_Wav_Class error_wav(error);
+Game_Audio_Wav_Class error_wav(error_sound);
 Game_Audio_Wav_Class level_wav(level);
 Game_Audio_Wav_Class rhode_wav(rhode);
 Game_Audio_Wav_Class hint_wav(hint);
