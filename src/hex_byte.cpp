@@ -106,3 +106,12 @@ byte hex_ascii_to_byte(char c)
         }
         return 0;
 }
+
+byte encoder_adjust(byte b, byte h, byte l)
+{
+  // increments higher or lower nibble of byte b by h or l respectively
+  byte output = b;
+  output = set_high(output, get_high(output)+h);
+  output = set_low(output, get_low(output)+l);
+  return output;
+}
